@@ -16,7 +16,7 @@
 (window => {
   "use strict";
   let scale = 1, pristine = true;
-  let timeJump = 0;
+  let timeJump = null;
   let timeSync = false;
   let debug = false;
 
@@ -60,7 +60,7 @@
       pristine = false;
       timeJump = +newTime;
       update();
-      timeJump = 0;
+      timeJump = null;
     },
 
     sync(resetScale = true) {
@@ -96,9 +96,7 @@
 
     updaters[updaters.length] =
       function update() {
-        contTime = timeJump ?
-          timeJump + offset :
-          handler.apply(func, self, []);
+        contTime = timeJump == null ? handler.apply(func, self, []): timeJump + offset;
         baseTime = apply(func, self, []);
         if (timeSync) contTime = baseTime;
       };
