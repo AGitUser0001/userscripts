@@ -41,20 +41,6 @@
   }
 
   const time = freeze({
-    get debug() { return debug; },
-    set debug(value) { debug = !!value; },
-
-    get scale() { return scale; },
-    set scale(value) { pristine = false; update(); scale = +value; },
-
-    get pristine() { return pristine; },
-    set pristine(value) { if (value) time.sync(); },
-
-    get now() { return apply(date.now, DateConstructor, []); },
-    set now(value) { time.jump(value); },
-
-    get real() { return apply(date.realTime, DateConstructor, []); },
-
     jump(newTime) {
       if (newTime == null) return;
       pristine = false;
@@ -70,11 +56,25 @@
       update();
       timeSync = false;
       pristine = scale === 1;
-    }
+    },
+
+    get debug() { return debug; },
+    set debug(value) { debug = !!value; },
+
+    get now() { return apply(date.now, DateConstructor, []); },
+    set now(value) { time.jump(value); },
+
+    get pristine() { return pristine; },
+    set pristine(value) { if (value) time.sync(); },
+
+    get real() { return apply(date.realTime, DateConstructor, []); },
+
+    get scale() { return scale; },
+    set scale(value) { pristine = false; update(); scale = +value; }
   });
   defineProperty(window, 'time', {
     value: time,
-    writeable: true,
+    writable: true,
     enumerable: false,
     configurable: true
   });
@@ -162,4 +162,4 @@
 
   window.setTimeout = wrap_timer(window.setTimeout);
   window.setInterval = wrap_timer(window.setInterval);
-})(typeof unsafeWindow === 'object' ? unsafeWindow : globalThis);
+})(/** @type {Window & typeof globalThis} */(typeof unsafeWindow === 'object' ? unsafeWindow : window));
