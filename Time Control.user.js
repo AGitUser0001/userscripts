@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.1
+// @version      1.2.2
 // @author       lucaszheng
 // @license      MIT
 //
@@ -16,23 +16,25 @@
 (window => {
   "use strict";
   let scale = 1, pristine = true;
+  /** @type {null | number} */
   let timeJump = null;
+
   let timeSync = false;
   let debug = false;
 
   const { isFinite,
-          Reflect: {
-            apply, construct,
-            setPrototypeOf
-          },
-          Object: {
-            defineProperty,
-            freeze
-          },
-          console: {
-            trace: log
-          }
-        } = window;
+    Reflect: {
+      apply, construct,
+      setPrototypeOf
+    },
+    Object: {
+      defineProperty,
+      freeze
+    },
+    console: {
+      trace: log
+    }
+  } = window;
 
   function update() {
     for (let idx = 0; idx < updaters.length; idx++) {
@@ -41,6 +43,9 @@
   }
 
   const time = freeze({
+    /**
+     * @param {number} newTime
+     */
     jump(newTime) {
       if (newTime == null) return;
       pristine = false;
@@ -78,12 +83,19 @@
     enumerable: false,
     configurable: true
   });
+
+  /** @type {(() => void)[]} */
   const updaters = [];
 
+  /**
+   * @param {() => number} func
+   * @param {any} self
+   */
   function wrap_now(func, self, offset = 0) {
     let baseTime = 0;
     let contTime = baseTime;
 
+    /** @type {ProxyHandler<typeof func>} */
     const handler = {
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
@@ -96,7 +108,7 @@
 
     updaters[updaters.length] =
       function update() {
-        contTime = timeJump == null ? handler.apply(func, self, []): timeJump + offset;
+        contTime = timeJump == null ? handler.apply?.(func, self, []) : timeJump + offset;
         baseTime = apply(func, self, []);
         if (timeSync) contTime = baseTime;
       };
@@ -111,6 +123,7 @@
   );
 
   const DateConstructor = window.Date;
+  /** @type {{ realTime: typeof Date.now, now: typeof Date.now, toString: typeof Date.prototype.toString, handler: ProxyHandler<DateConstructor> }} */
   const date = {
     realTime: window.Date.now,
     now: wrap_now(window.Date.now, window.Date),
@@ -142,7 +155,11 @@
 
   function noop() { }
 
-  function wrap_timer(func, self) {
+  /**
+   * @param {(handler: TimerHandler, timeout?: number | undefined, ...args: any[]) => number} func
+   */
+  function wrap_timer(func) {
+    /** @type {ProxyHandler<typeof func>} */
     const handler = {
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
@@ -162,4 +179,7 @@
 
   window.setTimeout = wrap_timer(window.setTimeout);
   window.setInterval = wrap_timer(window.setInterval);
-})(/** @type {Window & typeof globalThis} */(typeof unsafeWindow === 'object' ? unsafeWindow : window));
+})(
+  /** @type {Window & typeof globalThis} */
+  (typeof unsafeWindow === 'object' ? unsafeWindow : window)
+);
