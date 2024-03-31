@@ -191,7 +191,8 @@
 
     updaters[updaters.length] =
       function update() {
-        contTime = timeJump == null ? handler.apply?.(func, self, []) : timeJump + offset;
+        if (!handler.apply) return;
+        contTime = timeJump == null ? handler.apply(func, self, []) : timeJump + offset;
         baseTime = apply(func, self, []);
         if (timeSync) contTime = baseTime;
       };
