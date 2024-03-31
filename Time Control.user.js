@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.3.5b
+// @version      1.2.3.5c
 // @author       lucaszheng
 // @license      MIT
 //
@@ -19,7 +19,7 @@
 /*globals unsafeWindow,GM_setValue,GM_getValue,GM_deleteValue*/
 
 (function (window) {
-  "use strict";
+  'use strict';
   let scale = 1, pristine = true;
   /** @type {null | number} */
   let timeJump = null;
