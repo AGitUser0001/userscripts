@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.3.2
+// @version      1.2.3.3
 // @author       lucaszheng
 // @license      MIT
 //
@@ -61,10 +61,10 @@
       timeJump = null;
     },
 
-    sync(resetTime = true, resetScale = true) {
+    sync(syncTime = true, syncScale = true) {
       if (pristine) return;
-      if (resetScale) scale = 1;
-      if (!resetTime) return;
+      if (syncScale) scale = 1;
+      if (!syncTime) return;
       timeSync = true;
       update();
       timeSync = false;
@@ -72,6 +72,14 @@
     },
 
     storage: {
+      /**
+       * @param {number} newTime
+       */
+      jump(newTime) {
+        GM_setValue('baseTime', time.real);
+        GM_setValue('contTime', +newTime);
+      },
+
       save(saveTime = true, saveScale = true) {
         if (saveTime) {
           if (pristine) time.storage.reset(true, false);
@@ -111,20 +119,16 @@
           return (time.real - baseTime) + contTime;
         return time.real;
       },
-      set now(value) {
-        GM_setValue('baseTime', time.real);
-        GM_setValue('contTime', +value);
-      },
+      set now(value) { time.storage.jump(value); },
+
       get pristine() {
         let baseTime = GM_getValue('baseTime', null);
         let contTime = GM_getValue('contTime', null);
         let scale = GM_getValue('scale', null);
         return (baseTime == null || contTime == null) && scale == null
       },
-      set pristine(value) {
-        if (!value) return;
-        time.storage.reset();
-      },
+      set pristine(value) { if (!value) return; time.storage.reset(); },
+  
       get scale() {
         let scale = GM_getValue('scale', null);
         if (scale != null) return scale;

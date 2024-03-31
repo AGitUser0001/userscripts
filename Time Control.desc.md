@@ -5,7 +5,7 @@ The window.time object contains:
 - `jump(newTime: number): void`:
   Jumps time to *newTime*, a number.
 
-- `sync(resetTime: boolean = true, resetScale: boolean = true): void`:
+- `sync(syncTime: boolean = true, syncScale: boolean = true): void`:
   Optionally syncs the scale and/or time with real time in the page.
 
 - `storage`
