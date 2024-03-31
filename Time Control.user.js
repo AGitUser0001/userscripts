@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.3.1
+// @version      1.2.3.2
 // @author       lucaszheng
 // @license      MIT
 //
@@ -212,14 +212,14 @@
         if (debug) log('apply(%o, %o, %o)', target, self, args);
         if (!pristine) {
           args.length = 1;
-          args[0] = apply(date.now, DateConstructor, []);
+          args[0] = time.now;
         } else return DateConstructor();
         return apply(date.toString, construct(DateConstructor, args), []);
       },
       construct(target, args, newTarget) {
         if (debug) log('construct(%o, %o, %o)', target, args, newTarget);
         if (!pristine && args.length < 1) {
-          args[0] = apply(date.now, DateConstructor, []);
+          args[0] = time.now;
         }
         return construct(DateConstructor, args, newTarget);
       }
