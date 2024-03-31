@@ -3,12 +3,15 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.2.2
+// @version      1.2.2.3
 // @author       lucaszheng
 // @license      MIT
 //
 // @match        *://*/*
 // @grant        unsafeWindow
+// @grant        GM_getValue
+// @grant        GM_setValue
+
 // @inject-into  page
 // @run-at       document-start
 // ==/UserScript==
