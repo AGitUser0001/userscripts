@@ -5,8 +5,15 @@ The window.time object contains:
 - `jump(newTime: number): void`:
   Jumps time to *newTime*, a number.
 
-- `sync(resetScale: boolean = true): void`:
-  Syncs time with real time, optionally resetting the scale.
+- `sync(resetTime: boolean = true, resetScale: boolean = true): void`:
+  Optionally syncs the scale and/or time with real time in the page.
+
+- `save(saveTime: boolean = true, saveScale: boolean = true): void`:
+- `load(loadTime: boolean = true, loadScale: boolean = true): void`:
+  Saves or loads the current time and/or scale in script storage.
+
+- `reset(resetTime: boolean = true, resetScale: boolean = true): void`:
+  Resets the time and/or scale in both page and script storage.
 
 - `get time.debug(): boolean`:
 - `set time.debug(value: boolean): void`:
