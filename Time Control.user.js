@@ -73,36 +73,67 @@
 
     save(saveTime = true, saveScale = true) {
       if (saveTime) {
-        if (pristine) {
-          GM_deleteValue('baseTime');
-          GM_deleteValue('contTime');
-        } else {
-          GM_setValue('baseTime', time.real);
-          GM_setValue('contTime', time.now);
-        }
+        if (pristine) time.storage.reset(true, false);
+        else time.storage.now = time.now;
       }
       if (saveScale) {
-        if (scale === 1) GM_deleteValue('scale');
-        else GM_setValue('scale', time.scale);
+        if (scale === 1) time.storage.reset(false, true);
+        else time.storage.scale = time.scale;
       }
     },
 
     load(loadTime = true, loadScale = true) {
+      if (time.storage.pristine) return time.sync();
       if (loadTime) {
         let baseTime = GM_getValue('baseTime', null);
         let contTime = GM_getValue('contTime', null);
         if (baseTime != null && contTime != null)
-          time.jump((time.now - baseTime) + contTime);
+          time.jump((time.real - baseTime) + contTime);
       }
       if (loadScale) {
-        let newScale = GM_getValue('scale', null);
-        if (newScale != null) time.scale = newScale;
+        time.scale = time.storage.scale;
       }
     },
-    
-    reset(resetTime = true, resetScale = true) {
-      time.sync(resetTime, resetScale);
-      time.save(resetTime, resetScale);
+
+    storage: {
+      reset(resetTime = true, resetScale = true) {
+        if (resetTime) {
+          GM_deleteValue('baseTime');
+          GM_deleteValue('contTime');
+        }
+        if (resetScale) GM_deleteValue('scale');
+      },
+
+      get now() {
+        let baseTime = GM_getValue('baseTime', null);
+        let contTime = GM_getValue('contTime', null);
+        if (baseTime != null && contTime != null)
+          return (time.real - baseTime) + contTime;
+        return time.real;
+      },
+      set now(value) {
+        GM_setValue('baseTime', time.real);
+        GM_setValue('contTime', +value);
+      },
+      get pristine() {
+        let baseTime = GM_getValue('baseTime', null);
+        let contTime = GM_getValue('contTime', null);
+        let scale = GM_getValue('scale', null);
+        return (baseTime == null || contTime == null) && scale == null
+      },
+      set pristine(value) {
+        if (!value) return;
+        time.storage.reset();
+      },
+      get scale() {
+        let scale = GM_getValue('scale', null);
+        if (scale != null) return scale;
+        return 1;
+      },
+      set scale(value) {
+        if (value === time.storage.scale) return;
+        GM_setValue('scale', +value);
+      }
     },
 
     get debug() { return debug; },
@@ -124,6 +155,7 @@
     }
   };
 
+  freeze(time.storage);
   defineProperty(window, 'time', {
     value: freeze(time),
     writable: true,

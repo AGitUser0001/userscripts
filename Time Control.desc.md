@@ -12,8 +12,24 @@ The window.time object contains:
 - `load(loadTime: boolean = true, loadScale: boolean = true): void`:
   Saves or loads the current time and/or scale in script storage.
 
-- `reset(resetTime: boolean = true, resetScale: boolean = true): void`:
-  Resets the time and/or scale in both page and script storage.
+- `storage`
+  - `reset(resetTime: boolean = true, resetScale: boolean = true): void`:
+    Resets the time and/or scale in script storage.
+
+  - `get time.now(): number`:
+    The current time in the script storage.
+  - `set time.now(value: number): void`:
+    Time is set to `value` in the storage.
+
+  - `get pristine(): boolean`:
+    Whether time has been modified in the storage.
+  - `set pristine(value): void`:
+    If `value` is true, syncs time to real time in storage.
+
+  - `get time.scale(): number`:
+    The current scale that time moves at in the storage.
+  - `set time.scale(value: number): void`:
+    When set, changes the scale of time in storage.
 
 - `get time.debug(): boolean`:
 - `set time.debug(value: boolean): void`:
@@ -35,4 +51,4 @@ The window.time object contains:
 - `get time.scale(): number`:
   The current scale that time moves at.
 - `set time.scale(value: number): void`:
-  When set, changes the scale and sets pristine to false.
+  When set, changes the scale of time.
