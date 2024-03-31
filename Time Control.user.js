@@ -18,7 +18,7 @@
 // ==/UserScript==
 /*globals unsafeWindow,GM_setValue,GM_getValue,GM_deleteValue*/
 
-(function (window){
+(function (window) {
   "use strict";
   let scale = 1, pristine = true;
   /** @type {null | number} */
@@ -266,7 +266,4 @@
   window.setInterval = wrap_timer(window.setInterval);
 
   time.storage.load();
-})(
-  /** @type {typeof window} */
-  (typeof unsafeWindow === 'object' ? unsafeWindow : window)
-);
+})(/** @type {typeof window} */(unsafeWindow));
