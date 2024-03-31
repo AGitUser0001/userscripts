@@ -71,31 +71,31 @@
       pristine = scale === 1;
     },
 
-    save(saveTime = true, saveScale = true) {
-      if (saveTime) {
-        if (pristine) time.storage.reset(true, false);
-        else time.storage.now = time.now;
-      }
-      if (saveScale) {
-        if (scale === 1) time.storage.reset(false, true);
-        else time.storage.scale = time.scale;
-      }
-    },
-
-    load(loadTime = true, loadScale = true) {
-      if (time.storage.pristine) return time.sync();
-      if (loadTime) {
-        let baseTime = GM_getValue('baseTime', null);
-        let contTime = GM_getValue('contTime', null);
-        if (baseTime != null && contTime != null)
-          time.jump((time.real - baseTime) + contTime);
-      }
-      if (loadScale) {
-        time.scale = time.storage.scale;
-      }
-    },
-
     storage: {
+      save(saveTime = true, saveScale = true) {
+        if (saveTime) {
+          if (pristine) time.storage.reset(true, false);
+          else time.storage.now = time.now;
+        }
+        if (saveScale) {
+          if (scale === 1) time.storage.reset(false, true);
+          else time.storage.scale = time.scale;
+        }
+      },
+
+      load(loadTime = true, loadScale = true) {
+        if (time.storage.pristine) return time.sync();
+        if (loadTime) {
+          let baseTime = GM_getValue('baseTime', null);
+          let contTime = GM_getValue('contTime', null);
+          if (baseTime != null && contTime != null)
+            time.jump((time.real - baseTime) + contTime);
+        }
+        if (loadScale) {
+          time.scale = time.storage.scale;
+        }
+      },
+
       reset(resetTime = true, resetScale = true) {
         if (resetTime) {
           GM_deleteValue('baseTime');

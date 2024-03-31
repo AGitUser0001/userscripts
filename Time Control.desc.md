@@ -8,11 +8,11 @@ The window.time object contains:
 - `sync(resetTime: boolean = true, resetScale: boolean = true): void`:
   Optionally syncs the scale and/or time with real time in the page.
 
-- `save(saveTime: boolean = true, saveScale: boolean = true): void`:
-- `load(loadTime: boolean = true, loadScale: boolean = true): void`:
-  Saves or loads the current time and/or scale in script storage.
-
 - `storage`
+  - `save(saveTime: boolean = true, saveScale: boolean = true): void`:
+  - `load(loadTime: boolean = true, loadScale: boolean = true): void`:
+    Saves or loads the current time and/or scale in script storage.
+
   - `reset(resetTime: boolean = true, resetScale: boolean = true): void`:
     Resets the time and/or scale in script storage.
 
