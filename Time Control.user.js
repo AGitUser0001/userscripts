@@ -68,11 +68,17 @@
 
     save(saveTime = true, saveScale = true) {
       if (saveTime) {
-        GM_setValue('baseTime', time.real);
-        GM_setValue('contTime', time.now);
+        if (pristine) {
+          GM_deleteValue('baseTime');
+          GM_deleteValue('contTime');
+        } else {
+          GM_setValue('baseTime', time.real);
+          GM_setValue('contTime', time.now);
+        }
       }
       if (saveScale) {
-        GM_setValue('scale', time.scale);
+        if (scale === 1) GM_deleteValue('scale');
+        else GM_setValue('scale', time.scale);
       }
     },
 
