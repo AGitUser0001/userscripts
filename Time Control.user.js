@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.2.1
+// @version      1.2.2.2
 // @author       lucaszheng
 // @license      MIT
 //
@@ -45,7 +45,7 @@
     }
   }
 
-  const time = freeze({
+  const time = {
     /**
      * @param {number} newTime
      */
@@ -66,6 +66,29 @@
       pristine = scale === 1;
     },
 
+    save(saveTime = true, saveScale = true) {
+      if (saveTime) {
+        GM_setValue('baseTime', time.real);
+        GM_setValue('contTime', time.now);
+      }
+      if (saveScale) {
+        GM_setValue('scale', time.scale);
+      }
+    },
+
+    load(loadTime = true, loadScale = true) {
+      if (loadTime) {
+        let baseTime = GM_getValue('baseTime', null);
+        let contTime = GM_getValue('contTime', null);
+        if (baseTime != null && contTime != null)
+          time.jump((time.now - baseTime) + contTime);
+      }
+      if (loadScale) {
+        let newScale = GM_getValue('scale', null);
+        if (newScale != null) time.scale = newScale;
+      }
+    },
+
     get debug() { return debug; },
     set debug(value) { debug = !!value; },
 
@@ -78,10 +101,15 @@
     get real() { return apply(date.realTime, DateConstructor, []); },
 
     get scale() { return scale; },
-    set scale(value) { pristine = false; update(); scale = +value; }
-  });
+    set scale(value) {
+      value = +value;
+      if (value === scale) return;
+      pristine = false; update(); scale = value;
+    }
+  };
+
   defineProperty(window, 'time', {
-    value: time,
+    value: freeze(time),
     writable: true,
     enumerable: false,
     configurable: true
@@ -182,7 +210,9 @@
 
   window.setTimeout = wrap_timer(window.setTimeout);
   window.setInterval = wrap_timer(window.setInterval);
+
+  time.load();
 })(
-  /** @type {Window & typeof globalThis} */
+  /** @type {typeof window} */
   (typeof unsafeWindow === 'object' ? unsafeWindow : window)
 );
