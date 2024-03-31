@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.5
+// @version      1.2.5.1
 // @author       lucaszheng
 // @license      MIT
 //
@@ -126,7 +126,7 @@
 
       load(loadTime = true, loadScale = true, loadDebug = true) {
         if (loadDebug) time.debug = time.storage.debug;
-        if (time.storage.pristine) return time.sync();
+        if (time.storage.pristine) return time.sync(true, true, false);
 
         if (loadTime) {
           let baseTime = GM_getValue('baseTime', null);
