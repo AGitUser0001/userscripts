@@ -83,9 +83,12 @@
       timeJump = null;
     },
 
-    sync(syncTime = true, syncScale = true) {
+    sync(syncTime = true, syncScale = true, syncDebug = true) {
+      if (syncDebug) debug = false;
       if (pristine) return;
+
       if (syncScale) scale = 1;
+
       if (!syncTime) return;
       timeSync = true;
       update();
@@ -106,37 +109,45 @@
         GM_setValue('contTime', +newTime);
       },
 
-      save(saveTime = true, saveScale = true) {
+      save(saveTime = true, saveScale = true, saveDebug = true) {
+        if (saveDebug) {
+          if (debug === false) time.storage.reset(false, false, true);
+          else time.storage.debug = debug;
+        }
         if (saveTime) {
-          if (pristine) time.storage.reset(true, false);
+          if (pristine) time.storage.reset(true, false, false);
           else time.storage.now = time.now;
         }
         if (saveScale) {
-          if (scale === 1) time.storage.reset(false, true);
+          if (scale === 1) time.storage.reset(false, true, false);
           else time.storage.scale = scale;
         }
       },
 
-      load(loadTime = true, loadScale = true) {
+      load(loadTime = true, loadScale = true, loadDebug = true) {
+        if (loadDebug) time.debug = time.storage.debug;
         if (time.storage.pristine) return time.sync();
+
         if (loadTime) {
           let baseTime = GM_getValue('baseTime', null);
           let contTime = GM_getValue('contTime', null);
           if (baseTime != null && contTime != null)
             time.jump((time.real - baseTime) + contTime);
         }
-        if (loadScale) {
-          time.scale = time.storage.scale;
-        }
+        if (loadScale) time.scale = time.storage.scale;
       },
 
-      reset(resetTime = true, resetScale = true) {
+      reset(resetTime = true, resetScale = true, resetDebug = true) {
         if (resetTime) {
           GM_deleteValue('baseTime');
           GM_deleteValue('contTime');
         }
         if (resetScale) GM_deleteValue('scale');
+        if (resetDebug) GM_deleteValue('debug');
       },
+
+      get debug() { return GM_getValue('debug', false); },
+      set debug(value) { GM_setValue('debug', !!value); },
 
       get now() {
         let baseTime = GM_getValue('baseTime', null);
