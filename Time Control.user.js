@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.3.6
+// @version      1.2.4
 // @author       lucaszheng
 // @license      MIT
 //
@@ -39,6 +39,10 @@
     Number: {
       isFinite
     },
+    Symbol: {
+      toPrimitive,
+      toStringTag
+    },
     console: {
       trace: log
     }
@@ -50,7 +54,24 @@
     }
   }
 
+  /**
+   * @param {'string' | 'number' | 'default'} type
+   */
+  function timeToPrimitive(type) {
+    switch (type) {
+      case 'string': return this.toString();
+      default: return this.now;
+    }
+  }
+
+  function timeToString() {
+    return apply(date.toString, construct(DateConstructor, [this.now]), []);
+  }
+
   const time = {
+    [toStringTag]: 'time',
+    [toPrimitive]: timeToPrimitive,
+    toString: timeToString,
     /**
      * @param {number} newTime
      */
@@ -73,6 +94,10 @@
     },
 
     storage: {
+      [toStringTag]: 'storage',
+      [toPrimitive]: timeToPrimitive,
+      toString: timeToString,
+
       /**
        * @param {number} newTime
        */
@@ -216,11 +241,8 @@
     handler: {
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
-        if (!pristine) {
-          args.length = 1;
-          args[0] = time.now;
-        } else return DateConstructor();
-        return apply(date.toString, construct(DateConstructor, args), []);
+        if (pristine) return DateConstructor();
+        return time.toString();
       },
       construct(target, args, newTarget) {
         if (debug) log('construct(%o, %o, %o)', target, args, newTarget);
