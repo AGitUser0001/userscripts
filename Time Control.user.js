@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.3.4
+// @version      1.2.3.4b
 // @author       lucaszheng
 // @license      MIT
 //
@@ -125,7 +125,7 @@
         let baseTime = GM_getValue('baseTime', null);
         let contTime = GM_getValue('contTime', null);
         let scale = GM_getValue('scale', null);
-        return (baseTime == null || contTime == null) && scale == null
+        return (baseTime == null || contTime == null) && scale == null;
       },
       set pristine(value) { if (!value) return; time.storage.reset(); },
   
