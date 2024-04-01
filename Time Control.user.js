@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.5.1
+// @version      1.2.5.2
 // @author       lucaszheng
 // @license      MIT
 //
@@ -24,7 +24,7 @@
   /** @type {null | number} */
   let timeJump = null;
 
-  let timeSync = false;
+  let timeReset = false;
   let debug = false;
 
   const {
@@ -83,16 +83,16 @@
       timeJump = null;
     },
 
-    sync(syncTime = true, syncScale = true, syncDebug = true) {
-      if (syncDebug) debug = false;
+    reset(resetTime = true, resetScale = true, resetDebug = true) {
+      if (resetDebug) debug = false;
       if (pristine) return;
 
-      if (syncScale) scale = 1;
+      if (resetScale) scale = 1;
 
-      if (!syncTime) return;
-      timeSync = true;
+      if (!resetTime) return;
+      timeReset = true;
       update();
-      timeSync = false;
+      timeReset = false;
       pristine = scale === 1;
     },
 
@@ -126,7 +126,7 @@
 
       load(loadTime = true, loadScale = true, loadDebug = true) {
         if (loadDebug) time.debug = time.storage.debug;
-        if (time.storage.pristine) return time.sync(true, true, false);
+        if (time.storage.pristine) return time.reset(true, true, false);
 
         if (loadTime) {
           let baseTime = GM_getValue('baseTime', null);
@@ -169,6 +169,8 @@
         time.storage.reset(true, true, false);
       },
 
+      get real() { return apply(date.realTime, DateConstructor, []); },
+
       get scale() {
         let scale = GM_getValue('scale', null);
         if (scale != null) return scale;
@@ -187,7 +189,7 @@
     set now(value) { time.jump(value); },
 
     get pristine() { return pristine; },
-    set pristine(value) { if (value) time.sync(); },
+    set pristine(value) { if (value) time.reset(); },
 
     get real() { return apply(date.realTime, DateConstructor, []); },
 
@@ -234,7 +236,7 @@
         if (!handler.apply) return;
         contTime = timeJump == null ? handler.apply(func, self, []) : timeJump + offset;
         baseTime = apply(func, self, []);
-        if (timeSync) contTime = baseTime;
+        if (timeReset) contTime = baseTime;
       };
 
     return new Proxy(func, handler);
