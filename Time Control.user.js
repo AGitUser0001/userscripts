@@ -316,6 +316,7 @@
   const docTimeline = window.document.timeline;
   const animCurrentTime = getOwnPropertyDescriptor(window.AnimationTimeline.prototype, 'currentTime');
   if (animCurrentTime?.get) {
+
     const getAnimTimeValue = animCurrentTime.get;
     /** @this {AnimationTimeline} */
     function getAnimTime() {
@@ -325,9 +326,10 @@
     };
     const getWrappedAnimTime = wrap_now(
       getAnimTime, docTimeline,
-      (apply(getAnimTime, docTimeline, []) ?? date.real_perfNow()) - date.realTime(),
+      (apply(getAnimTime, docTimeline, []) ?? date.real_perfNow()) - apply(date.realTime, DateConstructor, []),
       docTimeline
     );
+
     defineProperty(window.AnimationTimeline.prototype, 'currentTime', {
       configurable: animCurrentTime.configurable,
       enumerable: animCurrentTime.enumerable,
