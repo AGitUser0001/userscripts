@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.2.6
+// @version      1.3
 // @author       lucaszheng
 // @license      MIT
 //
@@ -31,7 +31,8 @@
     Reflect: {
       apply, construct,
       setPrototypeOf,
-      getPrototypeOf
+      getPrototypeOf,
+      getOwnPropertyDescriptor
     },
     Object: {
       defineProperty,
@@ -56,6 +57,7 @@
   }
 
   /**
+   * @this { { toString: () => string; now: number }}
    * @param {'string' | 'number' | 'default'} type
    */
   function timeToPrimitive(type) {
@@ -65,6 +67,9 @@
     }
   }
 
+  /**
+   * @this { { now: number } }
+   */
   function timeToString() {
     return apply(date.toString, construct(DateConstructor, [this.now]), []);
   }
@@ -214,10 +219,12 @@
   const updaters = [];
 
   /**
-   * @param {() => number} func
-   * @param {any} self
+   * @template {() => number | null | undefined} T
+   * @param {T} func
+   * @param {object} self
+   * @param {object | null} req_self
    */
-  function wrap_now(func, self, offset = 0) {
+  function wrap_now(func, self, offset = 0, req_self = null) {
     let baseTime = 0;
     let contTime = baseTime;
 
@@ -226,7 +233,7 @@
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
         let time = apply(target, self, args);
-        if (pristine || !isFinite(time)) return time;
+        if (pristine || !isFinite(time) || (req_self !== null && self !== req_self)) return time;
         return ((time - baseTime) * scale) + contTime;
       }
     };
@@ -236,24 +243,19 @@
       function update() {
         if (!handler.apply) return;
         contTime = timeJump == null ? handler.apply(func, self, []) : timeJump + offset;
-        baseTime = apply(func, self, []);
+        baseTime = apply(func, self, []) ?? baseTime;
         if (timeReset) contTime = baseTime;
       };
 
     return new Proxy(func, handler);
   }
 
-  window.Performance.prototype.now = wrap_now(
-    window.Performance.prototype.now,
-    window.performance,
-    window.performance.now() - window.Date.now()
-  );
-
   const DateConstructor = window.Date;
-  /** @type {{ realTime: typeof Date.now, now: typeof Date.now, toString: typeof Date.prototype.toString, handler: ProxyHandler<DateConstructor> }} */
+  /** @type {{ realTime: typeof Date.now, now: typeof Date.now, real_perfNow: typeof performance.now, toString: typeof Date.prototype.toString, handler: ProxyHandler<DateConstructor> }} */
   const date = {
     realTime: window.Date.now,
     now: wrap_now(window.Date.now, window.Date),
+    real_perfNow: window.performance.now.bind(performance),
     toString: DateConstructor.prototype.toString,
     handler: {
       apply(target, self, args) {
@@ -276,6 +278,13 @@
 
   window.Date = new Proxy(DateConstructor, date.handler);
   window.Date.prototype.constructor = window.Date;
+
+  window.Performance.prototype.now = wrap_now(
+    window.Performance.prototype.now,
+    window.performance,
+    date.real_perfNow() - apply(date.realTime, DateConstructor, []),
+    window.performance
+  );
 
   function noop() { }
 
@@ -303,6 +312,47 @@
 
   window.setTimeout = wrap_timer(window.setTimeout);
   window.setInterval = wrap_timer(window.setInterval);
+
+  const docTimeline = window.document.timeline;
+  const animCurrentTime = getOwnPropertyDescriptor(window.AnimationTimeline.prototype, 'currentTime');
+  if (animCurrentTime?.get) {
+    const getAnimTimeValue = animCurrentTime.get;
+    /** @this {AnimationTimeline} */
+    function getAnimTime() {
+      const time = apply(getAnimTimeValue, this, arguments);
+      if (this !== docTimeline) return time;
+      return typeof time === 'number' ? time : null;
+    };
+    const getWrappedAnimTime = wrap_now(
+      getAnimTime, docTimeline,
+      (apply(getAnimTime, docTimeline, []) ?? date.real_perfNow()) - date.realTime(),
+      docTimeline
+    );
+    defineProperty(window.AnimationTimeline.prototype, 'currentTime', {
+      configurable: animCurrentTime.configurable,
+      enumerable: animCurrentTime.enumerable,
+      get: getWrappedAnimTime,
+      set: animCurrentTime.set
+    });
+
+    /** @type {ProxyHandler<typeof requestAnimationFrame>} */
+    const handler = {
+      apply(target, self, args) {
+        if (debug) log('apply(%o, %o, %o)', target, self, args);
+        if (!pristine && typeof args[0] === 'function') {
+          const cb = args[0];
+          args[0] = function () {
+            if (!pristine)
+              arguments[0] = apply(getWrappedAnimTime, docTimeline, []);
+            return apply(cb, this, arguments);
+          }
+        }
+        return apply(target, self, args);
+      }
+    };
+    setPrototypeOf(handler, null);
+    window.requestAnimationFrame = new Proxy(window.requestAnimationFrame, handler);
+  }
 
   time.storage.load();
 })(/** @type {typeof window} */(unsafeWindow));
