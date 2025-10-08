@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.3.1
+// @version      1.3.2
 // @author       lucaszheng
 // @license      MIT
 //
@@ -233,6 +233,7 @@
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
         let time = apply(target, self, args);
+        // pristine check necessary due to handler.apply(func, self, [])
         if (pristine || !isFinite(time) || (req_self !== null && self !== req_self)) return time;
         return ((time - baseTime) * scale) + contTime;
       }
@@ -247,7 +248,7 @@
         if (timeReset) contTime = baseTime;
       };
 
-    return new Proxy(func, handler);
+    return new Proxy(func, wrapHandler(handler));
   }
 
   const DateConstructor = window.Date;
@@ -260,12 +261,11 @@
     handler: {
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
-        if (pristine) return DateConstructor();
         return time.toString();
       },
       construct(target, args, newTarget) {
         if (debug) log('construct(%o, %o, %o)', target, args, newTarget);
-        if (!pristine && args.length < 1) {
+        if (args.length < 1) {
           args[0] = time.now;
         }
         return construct(DateConstructor, args, newTarget);
@@ -276,7 +276,7 @@
   setPrototypeOf(date.handler, null);
   DateConstructor.now = date.now;
 
-  window.Date = new Proxy(DateConstructor, date.handler);
+  window.Date = new Proxy(DateConstructor, wrapHandler(date.handler));
   window.Date.prototype.constructor = window.Date;
 
   window.Performance.prototype.now = wrap_now(
@@ -296,7 +296,7 @@
     const handler = {
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
-        if (!pristine && args.length > 1) {
+        if (args.length > 1) {
           args[1] = +args[1];
           if (args[1] && scale === 0)
             args[0] = noop;
@@ -307,7 +307,7 @@
       }
     };
     setPrototypeOf(handler, null);
-    return new Proxy(func, handler);
+    return new Proxy(func, wrapHandler(handler));
   }
 
   window.setTimeout = wrap_timer(window.setTimeout);
@@ -341,7 +341,7 @@
     const handler = {
       apply(target, self, args) {
         if (debug) log('apply(%o, %o, %o)', target, self, args);
-        if (!pristine && typeof args[0] === 'function') {
+        if (typeof args[0] === 'function') {
           const cb = args[0];
           args[0] = function () {
             if (!pristine)
@@ -353,7 +353,22 @@
       }
     };
     setPrototypeOf(handler, null);
-    window.requestAnimationFrame = new Proxy(window.requestAnimationFrame, handler);
+    window.requestAnimationFrame = new Proxy(window.requestAnimationFrame, wrapHandler(handler));
+  }
+
+  /**
+   * @param {ProxyHandler<any>} handler
+   */
+  function wrapHandler(handler) {
+    /** @type {ProxyHandler<ProxyHandler<any>>} */
+    const internalHandler = {
+      get(target, prop) {
+        if (pristine) return undefined;
+        return Reflect.get(target, prop);
+      }
+    };
+    setPrototypeOf(internalHandler, null);
+    return new Proxy(handler, internalHandler);
   }
 
   time.storage.load();
