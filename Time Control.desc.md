@@ -1,6 +1,6 @@
 This script creates a global window.time object that allows you to control time in a webpage.
 
-We wrap `Date.now`, `Performance.prototype.now`, and `AnimationTimeline.prototype.currentTime` with a `Proxy` that adjusts what is returned when the state has been modified.
+We wrap `Date.now`, `Performance.prototype.now`, `AnimationTimeline.prototype.currentTime`, and `Event.prototype.timeStamp` with a `Proxy` that adjusts what is returned when the state has been modified.
 We wrap `setTimeout` and `setInterval` with a `Proxy` that adjusts the timeout/interval parameter while the state is modified.
 `requestAnimationFrame` is wrapped with another `Proxy` that adjusts the `DOMHighResTimeStamp` by wrapping the input function if the state has been modified.
 

@@ -38,6 +38,7 @@
       defineProperty,
       freeze
     },
+    Event,
     Number: {
       isFinite
     },
@@ -175,7 +176,7 @@
         time.storage.reset(true, true, false);
       },
 
-      get real() { return apply(date.realTime, DateConstructor, []); },
+      get real() { return date.realTime(); },
 
       get scale() {
         let scale = GM_getValue('scale', null);
@@ -197,7 +198,7 @@
     get pristine() { return pristine; },
     set pristine(value) { if (value) time.reset(); },
 
-    get real() { return apply(date.realTime, DateConstructor, []); },
+    get real() { return date.realTime(); },
 
     get scale() { return scale; },
     set scale(value) {
@@ -223,16 +224,16 @@
    * @param {T} func
    * @param {object} self
    * @param {object | null} req_self
+   * @param {(func: T) => number} offset
    */
-  function wrap_now(func, self, offset = 0, req_self = null) {
+  function wrap_now(func, self, offset = () => 0, req_self = null) {
     let baseTime = 0;
     let contTime = baseTime;
 
     /** @type {ProxyHandler<typeof func>} */
     const handler = {
       apply(target, self, args) {
-        // cannot show `self`, it results in infinite loop from Chrome Devtools automatically expanding document.timeline
-        if (debug) log('apply(%o, self, %o)', target, args); 
+        if (debug) log('apply(%o, %o, %o)', target, self, args);
         let time = apply(target, self, args);
         // pristine check necessary due to handler.apply(func, self, [])
         if (pristine || !isFinite(time) || (req_self !== null && self !== req_self)) return time;
@@ -244,12 +245,64 @@
     updaters[updaters.length] =
       function update() {
         if (!handler.apply) return;
-        contTime = timeJump == null ? handler.apply(func, self, []) : timeJump + offset;
+        contTime = timeJump == null ? handler.apply(func, self, []) : timeJump + offset(func);
         baseTime = apply(func, self, []) ?? baseTime;
         if (timeReset) contTime = baseTime;
       };
 
     return new Proxy(func, wrapHandler(handler));
+  }
+
+  /**
+   * @template {object} O
+   * @template {keyof O} P
+   * @template {(this: O) => Extract<O[P], number | null | undefined>} T
+   * @param {O} obj
+   * @param {P} prop
+   * @param {() => object} getSelf
+   * @param {null | ((getter: (...args: unknown[]) => O[P]) => T)} getFunc
+   * @param {object | null} req_self
+   * @param {(func: T) => number} offset
+   */
+  function wrap_getter(obj, prop, getSelf, getFunc = null, offset = () => 0, req_self = null) {
+    const propDesc = getOwnPropertyDescriptor(obj, prop);
+    if (propDesc?.get) {
+      const func = getFunc?.(propDesc.get) ?? propDesc.get, real_func = propDesc.get;
+      let baseTime = 0;
+      let contTime = baseTime;
+
+      /** @type {ProxyHandler<typeof real_func>} */
+      const handler = {
+        apply(_target, self, args) {
+          // cannot show `self`, it results in infinite loop from Chrome Devtools automatically expanding document.timeline
+          if (debug) log('apply(%o, self, %o)', func, args);
+          let time = apply(func, self, args);
+          // pristine check necessary due to handler.apply(func, self, [])
+          if (pristine || !isFinite(time) || (req_self !== null && self !== req_self)) return time;
+          return ((time - baseTime) * scale) + contTime;
+        }
+      };
+      setPrototypeOf(handler, null);
+
+      updaters[updaters.length] =
+        function update() {
+          if (!handler.apply) return;
+          contTime = timeJump == null ? handler.apply(real_func, getSelf(), []) : timeJump + offset(/** @type {T} */(func));
+          baseTime = apply(func, getSelf(), []) ?? baseTime;
+          if (timeReset) contTime = baseTime;
+        };
+
+      const wrappedGetter = new Proxy(real_func, wrapHandler(handler));
+
+      defineProperty(obj, prop, {
+        configurable: propDesc.configurable,
+        enumerable: propDesc.enumerable,
+        get: wrappedGetter,
+        set: propDesc.set
+      });
+      return /** @type {T} */(wrappedGetter);
+    }
+    return null;
   }
 
   const DateConstructor = window.Date;
@@ -283,7 +336,7 @@
   window.Performance.prototype.now = wrap_now(
     window.Performance.prototype.now,
     window.performance,
-    date.real_perfNow() - apply(date.realTime, DateConstructor, []),
+    () => date.real_perfNow() - date.realTime(),
     window.performance
   );
 
@@ -315,29 +368,18 @@
   window.setInterval = wrap_timer(window.setInterval);
 
   const docTimeline = window.document.timeline;
-  const animCurrentTime = getOwnPropertyDescriptor(window.AnimationTimeline.prototype, 'currentTime');
-  if (animCurrentTime?.get) {
-
-    const getAnimTimeValue = animCurrentTime.get;
-    /** @this {AnimationTimeline} */
-    function getAnimTime() {
-      const time = apply(getAnimTimeValue, this, arguments);
+  const wrappedGetAnimTime = wrap_getter(
+    window.AnimationTimeline.prototype, 'currentTime', () => docTimeline,
+    (func) => function () {
+      const time = apply(func, this, arguments);
       if (this !== docTimeline) return time;
       return typeof time === 'number' ? time : null;
-    };
-    const getWrappedAnimTime = wrap_now(
-      getAnimTime, docTimeline,
-      (apply(getAnimTime, docTimeline, []) ?? date.real_perfNow()) - apply(date.realTime, DateConstructor, []),
-      docTimeline
-    );
-
-    defineProperty(window.AnimationTimeline.prototype, 'currentTime', {
-      configurable: animCurrentTime.configurable,
-      enumerable: animCurrentTime.enumerable,
-      get: getWrappedAnimTime,
-      set: animCurrentTime.set
-    });
-
+    },
+    getAnimTime =>
+      (apply(getAnimTime, docTimeline, []) ?? date.real_perfNow()) - date.realTime(),
+    docTimeline
+  );
+  if (wrappedGetAnimTime) {
     /** @type {ProxyHandler<typeof requestAnimationFrame>} */
     const handler = {
       apply(target, self, args) {
@@ -346,7 +388,7 @@
           const cb = args[0];
           args[0] = function () {
             if (!pristine)
-              arguments[0] = apply(getWrappedAnimTime, docTimeline, []);
+              arguments[0] = apply(wrappedGetAnimTime, docTimeline, []);
             return apply(cb, this, arguments);
           }
         }
@@ -356,6 +398,11 @@
     setPrototypeOf(handler, null);
     window.requestAnimationFrame = new Proxy(window.requestAnimationFrame, wrapHandler(handler));
   }
+  wrap_getter(
+    window.Event.prototype, 'timeStamp', () => new Event(''), null,
+    getTimeStamp =>
+      (apply(getTimeStamp, new Event(''), []) ?? date.real_perfNow()) - date.realTime()
+  );
 
   /**
    * @param {ProxyHandler<any>} handler
