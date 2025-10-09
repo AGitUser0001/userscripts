@@ -231,7 +231,8 @@
     /** @type {ProxyHandler<typeof func>} */
     const handler = {
       apply(target, self, args) {
-        if (debug) log('apply(%o, %o, %o)', target, self, args);
+        // cannot show `self`, it results in infinite loop from Chrome Devtools automatically expanding document.timeline
+        if (debug) log('apply(%o, self, %o)', target, args); 
         let time = apply(target, self, args);
         // pristine check necessary due to handler.apply(func, self, [])
         if (pristine || !isFinite(time) || (req_self !== null && self !== req_self)) return time;
