@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.4.5
+// @version      1.4.6
 // @author       lucaszheng
 // @license      MIT
 //
@@ -99,13 +99,19 @@
   function getProfiles() {
     const keys = GM_listValues();
     const profiles = [];
+    /** @type {{[key: string]: boolean}} */
+    const seen = {};
     const match = '_profile_';
+    setPrototypeOf(seen, null);
 
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
       for (let j = 1; j < 20 && j < (key.length - match.length); j++) {
         if (apply(substring, key, [j, j + match.length]) === match) {
-          profiles[profiles.length] = apply(substring, key, [j + match.length, key.length]);
+          const profile = apply(substring, key, [j + match.length, key.length]);
+          if (seen[profile]) break;
+          profiles[profiles.length] = profile;
+          seen[profile] = true;
           break;
         }
       }
