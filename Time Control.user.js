@@ -3,20 +3,20 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.4.0
+// @version      1.4.1
 // @author       lucaszheng
 // @license      MIT
 //
 // @match        *://*/*
 // @grant        unsafeWindow
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_deleteValue
+// @grant        getValue
+// @grant        setValue
+// @grant        deleteValue
 
 // @inject-into  page
 // @run-at       document-start
 // ==/UserScript==
-/*globals unsafeWindow,GM_setValue,GM_getValue,GM_deleteValue*/
+/*globals unsafeWindow,setValue,getValue,deleteValue*/
 
 (function (window) {
   'use strict';
@@ -75,19 +75,51 @@
     return apply(date.toString, construct(DateConstructor, [this.now]), []);
   }
 
+  let profile_id = '';
+  /** @param {string} name */
+  function get_var_name(name) {
+    if (profile_id != '') name = name + '_profile_' + profile_id;
+    return name;
+  }
+  /** @type {typeof GM_getValue} */
+  function getValue(name, defaultValue) {
+    return GM_getValue(get_var_name(name), defaultValue);
+  }
+  /** @type {typeof GM_setValue} */
+  function setValue(name, value) {
+    return GM_setValue(get_var_name(name), value);
+  }
+  /** @type {typeof GM_deleteValue} */
+  function deleteValue(name) {
+    return GM_deleteValue(get_var_name(name));
+  }
+
   const time = {
     [toStringTag]: 'time',
     [toPrimitive]: timeToPrimitive,
     toString: timeToString,
     /**
-     * @param {number} newTime
+     * @param {number | null} [newTime]
      */
     jump(newTime) {
-      if (newTime == null) return;
+      if (!newTime && newTime !== 0) return;
       pristine = false;
-      timeJump = +newTime;
-      update();
-      timeJump = null;
+      try {
+        timeJump = +newTime;
+        update();
+      } finally {
+        timeJump = null;
+      }
+    },
+
+    /**
+     * @param {number | null} [shiftTime]
+     */
+    shift(shiftTime) {
+      if (!shiftTime) return;
+      shiftTime = +shiftTime;
+      if (!shiftTime) return;
+      time.jump(time.now + shiftTime);
     },
 
     reset(resetTime = true, resetScale = true, resetDebug = true) {
@@ -108,12 +140,19 @@
       [toPrimitive]: timeToPrimitive,
       toString: timeToString,
 
+      get profile() {
+        return profile_id || null;
+      },
+      set profile(val) {
+        profile_id = (val ?? '') + '';
+      },
+
       /**
        * @param {number} newTime
        */
       jump(newTime) {
-        GM_setValue('baseTime', time.real);
-        GM_setValue('contTime', +newTime);
+        setValue('baseTime', time.real);
+        setValue('contTime', +newTime);
       },
 
       save(saveTime = true, saveScale = true, saveDebug = true) {
@@ -136,8 +175,8 @@
         if (time.storage.pristine) return time.reset(true, true, false);
 
         if (loadTime) {
-          let baseTime = GM_getValue('baseTime', null);
-          let contTime = GM_getValue('contTime', null);
+          let baseTime = getValue('baseTime', null);
+          let contTime = getValue('contTime', null);
           if (baseTime != null && contTime != null)
             time.jump((time.real - baseTime) + contTime);
         }
@@ -146,19 +185,19 @@
 
       reset(resetTime = true, resetScale = true, resetDebug = true) {
         if (resetTime) {
-          GM_deleteValue('baseTime');
-          GM_deleteValue('contTime');
+          deleteValue('baseTime');
+          deleteValue('contTime');
         }
-        if (resetScale) GM_deleteValue('scale');
-        if (resetDebug) GM_deleteValue('debug');
+        if (resetScale) deleteValue('scale');
+        if (resetDebug) deleteValue('debug');
       },
 
-      get debug() { return GM_getValue('debug', false); },
-      set debug(value) { GM_setValue('debug', !!value); },
+      get debug() { return getValue('debug', false); },
+      set debug(value) { setValue('debug', !!value); },
 
       get now() {
-        let baseTime = GM_getValue('baseTime', null);
-        let contTime = GM_getValue('contTime', null);
+        let baseTime = getValue('baseTime', null);
+        let contTime = getValue('contTime', null);
         if (baseTime != null && contTime != null)
           return (time.real - baseTime) + contTime;
         return time.real;
@@ -166,9 +205,9 @@
       set now(value) { time.storage.jump(value); },
 
       get pristine() {
-        let baseTime = GM_getValue('baseTime', null);
-        let contTime = GM_getValue('contTime', null);
-        let scale = GM_getValue('scale', null);
+        let baseTime = getValue('baseTime', null);
+        let contTime = getValue('contTime', null);
+        let scale = getValue('scale', null);
         return (baseTime == null || contTime == null) && scale == null;
       },
       set pristine(value) {
@@ -179,20 +218,20 @@
       get real() { return date.realTime(); },
 
       get scale() {
-        let scale = GM_getValue('scale', null);
+        let scale = getValue('scale', null);
         if (scale != null) return scale;
         return 1;
       },
       set scale(value) {
         if (value === time.storage.scale) return;
-        GM_setValue('scale', +value);
+        setValue('scale', +value);
       }
     },
 
     get debug() { return debug; },
     set debug(value) { debug = !!value; },
 
-    get now() { return apply(date.now, DateConstructor, []); },
+    get now() { return date.now(); },
     set now(value) { time.jump(value); },
 
     get pristine() { return pristine; },

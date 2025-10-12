@@ -9,10 +9,18 @@ The window.time object contains:
 - `jump(newTime: number): void`:
   Jumps time to *newTime*, a number.
 
+- `shift(shiftTime: number): void`:
+  Shifts time by *shiftTime*, a number.
+
 - `reset(resetTime: boolean = true, resetScale: boolean = true, resetDebug: boolean = true): void`:
   Optionally syncs the scale and/or time with real time in the page.
 
 - `storage`
+  - `get profile(): string | null`:
+    The current profile id, or `null` if unset.
+  - `set profile(value: string | null): void`:
+    Set the current profile to `value`, or unset profile if `value` is an empty string or `null`.
+
   - `save(saveTime: boolean = true, saveScale: boolean = true, saveDebug: boolean = true): void`:
   - `load(loadTime: boolean = true, loadScale: boolean = true, loadDebug: boolean = true): void`:
     Saves or loads the current time and/or scale in script storage.
