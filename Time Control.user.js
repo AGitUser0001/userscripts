@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.4.3
+// @version      1.4.4
 // @author       lucaszheng
 // @license      MIT
 //
@@ -94,6 +94,25 @@
     return GM_deleteValue(get_var_name(name));
   }
 
+  const substring = String.prototype.substring;
+  function getProfiles() {
+    const keys = GM_listValues();
+    const profiles = [];
+    const match = '_profile_';
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      for (let j = 1; j < 20 && j < (key.length - match.length); j++) {
+        if (apply(substring, key, [j, j + match.length]) === match) {
+          profiles[profiles.length] = apply(substring, key, [j + match.length, key.length]);
+          break;
+        }
+      }
+    }
+
+    return profiles;
+  }
+
   const time = {
     [toStringTag]: 'time',
     [toPrimitive]: timeToPrimitive,
@@ -145,6 +164,23 @@
       },
       set profile(val) {
         profile_id = (val ?? '') + '';
+      },
+
+      get profiles() {
+        return getProfiles();
+      },
+
+      /**
+       * @param {string | null} [profile]
+       */
+      erase(profile) {
+        const prev_profile_id = profile_id;
+        profile_id = (profile ?? '') + '';
+        try {
+          time.storage.reset();
+        } finally {
+          profile_id = prev_profile_id;
+        }
       },
 
       /**

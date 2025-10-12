@@ -21,6 +21,12 @@ The window.time object contains:
   - `set profile(value: string | null): void`:
     Set the current profile to `value`, or unset profile if `value` is an empty string or `null`.
 
+  - `get profiles(): string[]`:
+    A list of profiles.
+
+  - `erase(profile?: string | null)`:
+    Erase the profile `profile`, or the default profile if none is provided.
+
   - `save(saveTime: boolean = true, saveScale: boolean = true, saveDebug: boolean = true): void`:
   - `load(loadTime: boolean = true, loadScale: boolean = true, loadDebug: boolean = true): void`:
     Saves or loads the current time and/or scale in script storage.
