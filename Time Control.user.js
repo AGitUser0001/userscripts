@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.4.2
+// @version      1.4.3
 // @author       lucaszheng
 // @license      MIT
 //
@@ -178,7 +178,7 @@
           let baseTime = getValue('baseTime', null);
           let contTime = getValue('contTime', null);
           if (baseTime != null && contTime != null)
-            time.jump((time.real - baseTime) + contTime);
+            time.jump((time.real - baseTime) * time.storage.scale + contTime);
         }
         if (loadScale) time.scale = time.storage.scale;
       },
@@ -199,7 +199,7 @@
         let baseTime = getValue('baseTime', null);
         let contTime = getValue('contTime', null);
         if (baseTime != null && contTime != null)
-          return (time.real - baseTime) + contTime;
+          return (time.real - baseTime) * time.storage.scale + contTime;
         return time.real;
       },
       set now(value) { time.storage.jump(value); },
