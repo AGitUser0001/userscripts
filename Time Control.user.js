@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.4.6
+// @version      1.5
 // @author       lucaszheng
 // @license      MIT
 //
@@ -33,11 +33,13 @@
       apply, construct,
       setPrototypeOf,
       getPrototypeOf,
-      getOwnPropertyDescriptor
+      getOwnPropertyDescriptor,
+      defineProperty
     },
+    Object,
     Object: {
-      defineProperty,
-      freeze
+      freeze,
+      hasOwn
     },
     Event,
     Number: {
@@ -49,7 +51,13 @@
     },
     console: {
       trace: log
-    }
+    },
+    Error,
+    ReferenceError,
+    String: {
+      raw
+    },
+    RegExp
   } = window;
 
   function update() {
@@ -287,16 +295,102 @@
       value = +value;
       if (value === scale) return;
       pristine = false; update(); scale = value;
+    },
+
+    get hidden() {
+      return time_global_is_hidden;
+    },
+
+    set hidden(val) {
+      time_global_is_hidden = !!val;
     }
   };
 
-  freeze(time.storage);
-  defineProperty(getPrototypeOf(window), 'time', {
-    value: freeze(time),
-    writable: true,
-    enumerable: false,
-    configurable: true
-  });
+  let time_global_is_hidden = true;
+
+  const testRegExp = RegExp.prototype.test;
+  /** @returns {[stackIntrospection: false, windowProps: null] | [stackIntrospection: true, windowProps: boolean]} */
+  function detectDevtools() {
+    try {
+      throw new Error();
+    } catch (thrownError) {
+      try {
+        if (!(thrownError instanceof Error)) return [false, null];
+        const stack = thrownError.stack;
+        if (!stack) return [false, null];
+        const regex = /(\n|^)\s*(global code@|@debugger eval code:.*|at <anonymous>:.*)\s*$/;
+        if (!apply(testRegExp, regex, [stack])) return [false, null];
+      } catch { return [false, null];  }
+    }
+    try {
+      const funcs = ['$', '$$', '$x', 'clear', 'copy', 'inspect', 'keys', 'values'];
+      for (let i = 0; i < funcs.length; i++)
+        if (!hasOwn(window, funcs[i])) return [true, false];
+    } catch { return [true, false]; }
+    return [true, true];
+  }
+
+  /** @type {<T extends (...args: any[]) => any>(object: object, constructor: T) => void} */
+  let captureStackTrace = () => { };
+  if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function')
+    captureStackTrace = /** @type {any} */(Error.captureStackTrace);
+
+  /**
+   * @param {(...args: any[]) => any} introspectionPoint
+   * @param {number} safariTrimLevel
+   */
+  function detectEval(introspectionPoint = detectEval, safariTrimLevel = 1) {
+    try {
+      const err = new Error();
+      captureStackTrace(err, introspectionPoint);
+      const stack = err.stack;
+      if (!stack) return false;
+      const regexStr = raw`^\s*(Error\s*\n\s*at eval(:| ).*|.*> eval:.*|` +
+                       '(?:.*\n)?'.repeat(safariTrimLevel) + raw`\s*eval code@)\s*(\n|$)`;
+      if (apply(testRegExp, new RegExp(regexStr), [stack])) return true;
+    } catch { return false; }
+  }
+
+  freeze(time.storage); freeze(time);
+  const windowProto = getPrototypeOf(window);
+  if (windowProto) {
+    /** @type {Required<Pick<PropertyDescriptor, 'get' | 'set' | 'configurable' | 'enumerable'>> & ThisType<any>} */
+    const desc = {
+      get() {
+        if (!time_global_is_hidden) return time;
+        if (this === window) {
+          const result = detectDevtools();
+          if (result[0] && result[1]) return time;
+          if (result[0] || detectEval(timeGetter, 2)) {
+            const refError = new ReferenceError('time is not defined');
+            captureStackTrace(refError, timeGetter);
+            throw refError;
+          }
+        }
+      },
+      set(value) {
+        try {
+          const self = Object(this ?? window);
+          const hasProp = hasOwn(self, 'time');
+          if (hasProp) {
+            self.time = value;
+          } else {
+            const desc = {
+              value, writable: true,
+              enumerable: true, configurable: true
+            };
+            setPrototypeOf(desc, null);
+            defineProperty(self, 'time', desc);
+          }
+        } catch (err) {
+          log(err);
+        }
+      },
+      enumerable: false,
+      configurable: true
+    }, timeGetter = desc.get;
+    defineProperty(windowProto, 'time', desc);
+  }
 
   /** @type {(() => void)[]} */
   const updaters = [];
@@ -377,10 +471,7 @@
       const wrappedGetter = new Proxy(real_func, wrapHandler(handler));
 
       defineProperty(obj, prop, {
-        configurable: propDesc.configurable,
-        enumerable: propDesc.enumerable,
-        get: wrappedGetter,
-        set: propDesc.set
+        get: wrappedGetter
       });
       return /** @type {T} */(wrappedGetter);
     }

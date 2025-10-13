@@ -1,10 +1,13 @@
-This script creates a global window.time object that allows you to control time in a webpage.
+This script creates a global `time` object that allows you to control time in a webpage.
+This object is only available to access in Developer Tools contexts while `time.hidden` is `true` (default `true`).
+`Developer Tools contexts` are contexts where the call stack ends with an anonymous scope in Chrome or Firefox, or `global code@` in Safari, as well as where a set of Developer Tools utilities exist as own properties on the `window` object. Currently, we check for `$, $$, $x, clear, copy, inspect, keys, values`.
+In top-level `eval` scopes while hidden and outside of `Developer Tools contexts`, we throw a ReferenceError when attempting to access `time`. We determine `eval` scopes using stack introspection. This behaviour is necessary to allow code that utilizes `eval(str)` to check for a global variable (`str = 'time'`) to detect the variable normally. `'time' in window` will still output `true`.
 
 We wrap `Date.now`, `Performance.prototype.now`, `AnimationTimeline.prototype.currentTime`, and `Event.prototype.timeStamp` with a `Proxy` that adjusts what is returned when the state has been modified.
 We wrap `setTimeout` and `setInterval` with a `Proxy` that adjusts the timeout/interval parameter while the state is modified.
 `requestAnimationFrame` is wrapped with another `Proxy` that adjusts the `DOMHighResTimeStamp` by wrapping the input function if the state has been modified.
 
-The window.time object contains:
+The `time` object contains:
 
 - `jump(newTime: number): void`:
   Jumps time to *newTime*, a number.
@@ -14,6 +17,32 @@ The window.time object contains:
 
 - `reset(resetTime: boolean = true, resetScale: boolean = true, resetDebug: boolean = true): void`:
   Optionally syncs the scale and/or time with real time in the page.
+
+- `get debug(): boolean`:
+- `set debug(value: boolean): void`:
+  A boolean that controls logging of calls.
+
+- `get hidden(): boolean`
+- `set hidden(value: boolean)`:
+  A boolean that controls whether the `time` object is available only in Developer Tools contexts or All contexts. Defaults to `true`.
+
+- `get now(): number`:
+  The current time on the page. Should be equal to window.Date.now().
+- `set now(value: number): void`:
+  Time jumps to `value`.
+
+- `get pristine(): boolean`:
+  Whether time has been modified.
+- `set pristine(value): void`:
+  If `value` is true, syncs 
+
+- `get real(): number`:
+  The actual time grabbed from DateConstructor.now().
+
+- `get scale(): number`:
+  The current scale that time moves at.
+- `set scale(value: number): void`:
+  When set, changes the scale of time.
 
 - `storage`
   - `get profile(): string | null`:
@@ -51,25 +80,3 @@ The window.time object contains:
     The current scale that time moves at in the storage.
   - `set scale(value: number): void`:
     When set, changes the scale of time in storage.
-
-- `get debug(): boolean`:
-- `set debug(value: boolean): void`:
-  A boolean that controls logging of calls.
-
-- `get now(): number`:
-  The current time on the page. Should be equal to window.Date.now().
-- `set now(value: number): void`:
-  Time jumps to `value`.
-
-- `get pristine(): boolean`:
-  Whether time has been modified.
-- `set pristine(value): void`:
-  If `value` is true, syncs 
-
-- `get real(): number`:
-  The actual time grabbed from DateConstructor.now().
-
-- `get scale(): number`:
-  The current scale that time moves at.
-- `set scale(value: number): void`:
-  When set, changes the scale of time.
