@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.5.1
+// @version      1.5.2
 // @author       lucaszheng
 // @license      MIT
 //
@@ -361,7 +361,7 @@
         if (this === window) {
           const result = detectDevtools();
           if (result[0] && result[1]) return time;
-          if (result[0] || detectEval(timeGetter, 2)) {
+          if (detectEval(timeGetter, 2)) {
             const refError = new ReferenceError('time is not defined');
             captureStackTrace(refError, timeGetter);
             throw refError;
