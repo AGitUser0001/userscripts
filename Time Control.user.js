@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.5
+// @version      1.5.1
 // @author       lucaszheng
 // @license      MIT
 //
@@ -325,7 +325,7 @@
     try {
       const funcs = ['$', '$$', '$x', 'clear', 'copy', 'inspect', 'keys', 'values'];
       for (let i = 0; i < funcs.length; i++)
-        if (!hasOwn(window, funcs[i])) return [true, false];
+        if (!(funcs[i] in window)) return [true, false];
     } catch { return [true, false]; }
     return [true, true];
   }

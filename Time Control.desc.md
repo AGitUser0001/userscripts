@@ -1,6 +1,6 @@
 This script creates a global `time` object that allows you to control time in a webpage.
 This object is only available to access in Developer Tools contexts while `time.hidden` is `true` (default `true`).
-`Developer Tools contexts` are contexts where the call stack ends with an anonymous scope in Chrome or Firefox, or `global code@` in Safari, as well as where a set of Developer Tools utilities exist as own properties on the `window` object. Currently, we check for `$, $$, $x, clear, copy, inspect, keys, values`.
+`Developer Tools contexts` are contexts where the call stack ends with an anonymous scope in Chrome or Firefox, or `global code@` in Safari, as well as where a set of Developer Tools utilities exist as properties on the `window` object or its prototype chain. Currently, we check for `$, $$, $x, clear, copy, inspect, keys, values`.
 In top-level `eval` scopes while hidden and outside of `Developer Tools contexts`, we throw a ReferenceError when attempting to access `time`. We determine `eval` scopes using stack introspection. This behaviour is necessary to allow code that utilizes `eval(str)` to check for a global variable (`str = 'time'`) to detect the variable normally. `'time' in window` will still output `true`.
 
 We wrap `Date.now`, `Performance.prototype.now`, `AnimationTimeline.prototype.currentTime`, and `Event.prototype.timeStamp` with a `Proxy` that adjusts what is returned when the state has been modified.
