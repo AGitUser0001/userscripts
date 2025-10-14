@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.5.4
+// @version      1.5.5
 // @author       lucaszheng
 // @license      MIT
 //
@@ -68,24 +68,6 @@
     }
   }
 
-  /**
-   * @this { { toString: () => string; now: number }}
-   * @param {'string' | 'number' | 'default'} type
-   */
-  function timeToPrimitive(type) {
-    switch (type) {
-      case 'string': return this.toString();
-      default: return this.now;
-    }
-  }
-
-  /**
-   * @this { { now: number } }
-   */
-  function timeToString() {
-    return apply(date.toString, construct(DateConstructor, [this.now]), []);
-  }
-
   let profile_id = '';
   /** @param {string} name */
   function get_var_name(name) {
@@ -128,6 +110,25 @@
     }
 
     return profiles;
+  }
+
+  /**
+   * @this { { toString: typeof time.toString, now: typeof time.now } }
+   * @param {'string' | 'number' | 'default'} type
+   */
+  function timeToPrimitive(type) {
+    switch (type) {
+      case 'number': return this.now;
+      case 'string':
+      default: return this.toString();
+    }
+  }
+
+  /**
+   * @this { { now: typeof time.now } }
+   */
+  function timeToString() {
+    return apply(date.toString, construct(DateConstructor, [time.now]), []);
   }
 
   const time = {
