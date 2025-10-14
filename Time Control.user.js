@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.5.3
+// @version      1.5.4
 // @author       lucaszheng
 // @license      MIT
 //
@@ -375,7 +375,7 @@
         } catch (err) {
           if (err instanceof Error)
             captureStackTrace(err, timeGetter);
-          return err;
+          throw err;
         }
       },
       set(value) {
@@ -393,12 +393,14 @@
             defineProperty(self, 'time', desc);
           }
         } catch (err) {
-          log(err);
+          if (err instanceof Error)
+            captureStackTrace(err, timeSetter);
+          throw err;
         }
       },
       enumerable: false,
       configurable: true
-    }, timeGetter = desc.get;
+    }, timeGetter = desc.get, timeSetter = desc.set;
     defineProperty(windowProto, 'time', desc);
   }
 
