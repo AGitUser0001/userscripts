@@ -34,12 +34,14 @@
       setPrototypeOf,
       getPrototypeOf,
       getOwnPropertyDescriptor,
-      defineProperty
+      defineProperty,
+      get
     },
     Object,
     Object: {
       freeze,
-      hasOwn
+      hasOwn,
+      create
     },
     Event,
     Number: {
@@ -323,9 +325,9 @@
       } catch { return [false, null];  }
     }
     try {
-      const funcs = ['$', '$$', '$x', 'clear', 'copy', 'inspect', 'keys', 'values'];
-      for (let i = 0; i < funcs.length; i++)
-        if (!(funcs[i] in window)) return [true, false];
+      const props = ['$', '$$', '$x', 'clear', 'copy', 'inspect', 'keys', 'values'];
+      for (let i = 0; i < props.length; i++)
+        if (!(props[i] in window)) return [true, false];
     } catch { return [true, false]; }
     return [true, true];
   }
@@ -354,6 +356,7 @@
   freeze(time.storage); freeze(time);
   const windowProto = getPrototypeOf(window);
   if (windowProto) {
+    const windowProperties = getPrototypeOf(windowProto) ?? create(null);
     /** @type {Required<Pick<PropertyDescriptor, 'get' | 'set' | 'configurable' | 'enumerable'>> & ThisType<any>} */
     const desc = {
       get() {
@@ -361,11 +364,18 @@
         if (this === window) {
           const result = detectDevtools();
           if (result[0] && result[1]) return time;
-          if (detectEval(timeGetter, 2)) {
+          if (!('time' in windowProperties) && detectEval(timeGetter, 2)) {
             const refError = new ReferenceError('time is not defined');
             captureStackTrace(refError, timeGetter);
             throw refError;
           }
+        }
+        try {
+          return get(windowProperties, 'time', window);
+        } catch (err) {
+          if (err instanceof Error)
+            captureStackTrace(err, timeGetter);
+          return err;
         }
       },
       set(value) {
