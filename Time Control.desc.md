@@ -9,6 +9,12 @@ We wrap `setTimeout` and `setInterval` with a `Proxy` that adjusts the timeout/i
 
 The `time` object contains:
 
+- `toString(): string`
+  Returns the time as a string, should be equivalent to `window.Date()`.
+
+- `valueOf(): number`
+  Returns the time as a number, equivalent to `time.now`.
+
 - `jump(newTime: number): void`:
   Jumps time to *newTime*, a number.
 
@@ -27,7 +33,7 @@ The `time` object contains:
   A boolean that controls whether the `time` object is available only in Developer Tools contexts or All contexts. Defaults to `true`.
 
 - `get now(): number`:
-  The current time on the page. Should be equal to window.Date.now().
+  The current time on the page. Should be equal to `window.Date.now()`.
 - `set now(value: number): void`:
   Time jumps to `value`.
 
@@ -37,7 +43,7 @@ The `time` object contains:
   If `value` is true, syncs 
 
 - `get real(): number`:
-  The actual time grabbed from DateConstructor.now().
+  The actual time from `DateConstructor.now()`.
 
 - `get scale(): number`:
   The current scale that time moves at.
@@ -45,6 +51,11 @@ The `time` object contains:
   When set, changes the scale of time.
 
 - `storage`
+  - `toString(): string`
+    Returns the time in storage as a string, should be equivalent to `(new window.Date(time.storage.now)).toString()`.
+  - `valueOf(): number`
+    Returns the time in storage as a number, equivalent to `time.storage.now`.
+
   - `get profile(): string | null`:
     The current profile id, or `null` if unset.
   - `set profile(value: string | null): void`:

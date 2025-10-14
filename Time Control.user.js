@@ -3,7 +3,7 @@
 // @description  Script allowing you to control time.
 // @icon         https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/ce262758ff44d053136358dcd892979d_low_res_Time_Machine.png
 // @namespace    mailto:lucaszheng2011@outlook.com
-// @version      1.5.5
+// @version      1.5.6
 // @author       lucaszheng
 // @license      MIT
 //
@@ -118,23 +118,28 @@
    */
   function timeToPrimitive(type) {
     switch (type) {
-      case 'number': return this.now;
+      case 'number': return this === time.storage ? this.now : time.now;
       case 'string':
-      default: return this.toString();
+      default: return this === time.storage ? this.toString() : time.toString();
     }
   }
 
-  /**
-   * @this { { now: typeof time.now } }
-   */
+  /** @this { { now: typeof time.now } } */
   function timeToString() {
-    return apply(date.toString, construct(DateConstructor, [time.now]), []);
+    return apply(date.toString, construct(DateConstructor, [this === time.storage ? this.now : time.now]), []);
+  }
+
+  /** @this { { now: typeof time.now } } */
+  function timeValueOf() {
+    return this === time.storage ? this.now : time.now;
   }
 
   const time = {
     [toStringTag]: 'time',
     [toPrimitive]: timeToPrimitive,
     toString: timeToString,
+    valueOf: timeValueOf,
+
     /**
      * @param {number | null} [newTime]
      */
@@ -176,6 +181,7 @@
       [toStringTag]: 'storage',
       [toPrimitive]: timeToPrimitive,
       toString: timeToString,
+      valueOf: timeValueOf,
 
       get profile() {
         return profile_id || null;
