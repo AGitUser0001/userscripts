@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.4
+// @version     1.2.8.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -2411,38 +2411,47 @@
       }
     }
 
-    _rtf = new Intl.RelativeTimeFormat(undefined, {
-      numeric: 'auto', style: 'short'
-    });
-
+    _df = new Intl.DurationFormat(undefined, {
+      style: 'long'
+    })
     /**
      * @param {Date} date 
      * @returns {string}
      */
     _formatTime(date) {
       const now = Date.now();
-      const diffSec = (date.getTime() - now) / 1000;
-      const absSec = Math.abs(diffSec);
+      const diffMs = now - date.getTime();
 
-      const rtf = this._rtf;
+      const totalSec = Math.floor(diffMs / 1000);
 
-      // < 1 hour → seconds/minutes
-      if (absSec < 3600) {
-        if (absSec < 60) {
-          return rtf.format(Math.round(diffSec), 'second');
-        }
-        return rtf.format(Math.round(diffSec / 60), 'minute');
+      // Cache formatter
+      const df = this._df;
+
+      // < 1 minute → seconds
+      if (totalSec < 60) {
+        return df.format({ seconds: totalSec });
       }
 
-      // < 24 hours → hours
-      if (absSec < 86400) {
-        return rtf.format(Math.round(diffSec / 3600), 'hour');
+      // < 1 hour → m + s
+      if (totalSec < 3600) {
+        return df.format({
+          minutes: Math.floor(totalSec / 60),
+          seconds: totalSec % 60
+        });
+      }
+
+      // < 24 hours → h + m
+      if (totalSec < 86400) {
+        return df.format({
+          hours: Math.floor(totalSec / 3600),
+          minutes: Math.floor((totalSec % 3600) / 60)
+        });
       }
 
       const d = new Date(date);
 
       // < 7 days → weekday + time
-      if (absSec < 604800) {
+      if (totalSec < 604800) {
         return d.toLocaleString(undefined, {
           weekday: 'short',
           hour: 'numeric',
