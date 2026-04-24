@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.2
+// @version     1.2.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -676,6 +676,8 @@
       this.arena.addEventListener('pointerdown', this._onPointerDown);
       window.addEventListener('pointermove', this._onPointerMove);
       window.addEventListener('pointerup', this._onPointerUp);
+
+      this._destroyed = false;
     }
 
     /**
@@ -2361,7 +2363,11 @@
       const r = this._getSelected();
       if (!r) return;
 
-      new SwapReplay(r.data, snapshotHTML, this._cursor, mode).play();
+      const replay = new SwapReplay(r.data, snapshotHTML, this._cursor, mode);
+      replay.play().then(async () => {
+        await this._waitFor(() => replay._destroyed);
+        this._cursor.pointerMove({ x: -500, y: -500 });
+      });
     }
 
     async _deleteSelected() {
