@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3
+// @version     1.3.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2076,19 +2076,15 @@
     .rc-result {
       font-size: 11px;
       font-weight: 700;
-      padding: 3px 7px;
-      border-radius: 999px;
       flex-shrink: 0;
     }
 
     .rc-result.is-win {
       color: #2e8b57;
-      background: #2e8b5715;
     }
 
     .rc-result.is-loss {
       color: #b8432e;
-      background: #b8432e15;
     }
 
     .rc-result.is-unknown {
