@@ -23,6 +23,8 @@
    *   opponentStartOrder: number[],
    *   events: RecordedEvent[],
    *   opponent: OpponentEvent[],
+   *   playerName: string,
+   *   playerNameClass: string | null,
    *   opponentName: string,
    *   opponentNameClass: string | null
    * }} SwapRecording
@@ -178,6 +180,8 @@
         opponentStartOrder: [],
         events: [],
         opponent: [],
+        playerName: 'you',
+        playerNameClass: null,
         opponentName: 'opponent',
         opponentNameClass: null
       };
@@ -350,6 +354,12 @@
         this.data.opponentNameClass = [...oppName.classList].find(x => x.startsWith('name-')) || null;
       }
 
+      const playerName = document.querySelector('.player-card .player-name span');
+      if (playerName) {
+        this.data.playerName = playerName.textContent.trim();
+        this.data.playerNameClass = [...playerName.classList].find(x => x.startsWith('name-')) || null;
+      }
+
       this._barCount = this.data.startOrder.length;
 
       const oppBars = queryOpponentBars(document);
@@ -401,6 +411,8 @@
         opponentStartOrder: this.data.opponentStartOrder.slice(),
         events: this.data.events.slice(),
         opponent: this.data.opponent.slice(),
+        playerName: this.data.playerName,
+        playerNameClass: this.data.playerNameClass,
         opponentName: this.data.opponentName,
         opponentNameClass: this.data.opponentNameClass
       };
@@ -568,6 +580,24 @@
 
       /** @type {HTMLElement | null} */
       this.opponentMovesEl = this.root.querySelector('.match-head .vs-side.right .vs-moves');
+
+      if (mode === 'ghost-player') {
+        this.data.opponentName = this.data.playerName;
+        this.data.opponentNameClass = this.data.playerNameClass;
+      }
+
+      if (mode.startsWith('ghost-')) {
+        this.data.playerName = 'you';
+        this.data.playerNameClass = null;
+      }
+
+      const playerNameEl = this.root.querySelector('.vs-side:not(.right) .vs-name');
+
+      if (playerNameEl) {
+        playerNameEl.textContent = this.data.playerName;
+        if (this.data.playerNameClass)
+          playerNameEl.classList.add(this.data.playerNameClass);
+      }
 
       const oppNameEl = this.root.querySelector('.vs-side.right .vs-name');
 
@@ -1220,9 +1250,6 @@
 
   //#region Fake Cursor
   class FakeCursor {
-    /** @type {ForcedPseudo | null} */
-    _pseudoController = null;
-
     /** @type {Map<string, boolean>} */
     _cursorLoadCache = new Map();
 
@@ -1242,9 +1269,6 @@
      * @param {Record<string, { url: string, x?: number, y?: number }>} cursorMap
      */
     constructor(cursorMap = {}, enablePseudo = false) {
-      if (enablePseudo)
-        this._pseudoController = new ForcedPseudo();
-
       this.x = window.innerWidth / 2;
       this.y = window.innerHeight / 2;
       this.isDown = false;
@@ -1625,105 +1649,6 @@
       return { x: tx, y: ty };
     }
 
-    // Faster start, stronger stop than the previous version.
-    /**
-     * @param {number} t 
-     * @returns {number}
-     */
-    _easeOutHard(t) {
-      return 1 - Math.pow(1 - t, 4);
-    }
-
-    /**
-     * @param {Element | { x: number, y: number }} target
-     * @param {number} duration
-     * @returns {Promise<void>}
-     */
-    async moveTo(target, duration) {
-      if (
-        target instanceof Element &&
-        this._isInside(target)
-      ) {
-        return;
-      }
-
-      /**
-       * Resolve a target into a point.
-       * @param {Element | { x: number, y: number }} target
-       */
-      const resolveTargetPoint = (target) => {
-        if (target instanceof Element) {
-          const pt = this._getTargetPoint(target);
-          return { x: pt.x, y: pt.y };
-        }
-        return { x: target.x, y: target.y };
-      };
-
-
-      let initialPoint = resolveTargetPoint(target);
-
-      const startX = this.x;
-      const startY = this.y;
-      const initialDx = initialPoint.x - startX;
-      const initialDy = initialPoint.y - startY;
-      const initialDist = Math.hypot(initialDx, initialDy);
-
-      const startTime = performance.now();
-
-      // Middle-only deviation, zero at start/end.
-      const deviationMag =
-        Math.min(6, Math.max(0, initialDist * 0.03)) * (Math.random() - 0.5);
-
-      return new Promise(resolve => {
-        /** @type {FrameRequestCallback} */
-        const step = (now) => {
-          let t = (now - startTime) / duration;
-          if (isNaN(t)) t = 1;
-          if (t < 0) t = 0;
-          if (t > 1) t = 1;
-
-          // Re-resolve only when following.
-          const currentTarget = resolveTargetPoint(target);
-
-          const dx = currentTarget.x - startX;
-          const dy = currentTarget.y - startY;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist < 1 / devicePixelRatio || t >= 1) {
-            this.pointerMove(currentTarget);
-            resolve();
-            return;
-          }
-
-          const e = this._easeOutHard(t);
-
-          let x = startX + dx * e;
-          let y = startY + dy * e;
-
-          // Perpendicular deviation, only through the middle.
-          const nx = -dy / dist;
-          const ny = dx / dist;
-
-          const midEnvelope = Math.sin(Math.PI * t);
-          const endFade = Math.max(0, 1 - Math.pow(t, 1.8));
-          const deviation = deviationMag * midEnvelope * endFade;
-
-          x += nx * deviation;
-          y += ny * deviation;
-
-          this.pointerMove({ x, y });
-
-          if (t < 1) {
-            requestAnimationFrame(step);
-          } else {
-            resolve();
-          }
-        };
-
-        requestAnimationFrame(step);
-      });
-    }
-
     /**
      * @param {{x: number, y: number}} position 
      */
@@ -1746,21 +1671,12 @@
       const el = this._elementAtPoint();
       this._downPath = this._getPath(el);
 
-      if (el)
-        this._pseudoController?.togglePseudo(el, 'active', true);
-
       this._dispatch("pointerdown", el);
       this._dispatch("mousedown", el, { detail: 1 });
     }
 
     pointerUp() {
       const el = this._elementAtPoint();
-
-      // remove active BEFORE events
-      const downEl = this._downPath[0];
-      if (downEl) {
-        this._pseudoController?.togglePseudo(downEl, 'active', false);
-      }
 
       this._dispatch("pointerup", el);
       this._dispatch("mouseup", el, { detail: 1 });
@@ -1841,16 +1757,6 @@
         this._dispatch("mouseout", oldEl, { relatedTarget: newEl, bubbles: true });
       }
 
-      if (this._pseudoController) {
-        for (const el of exited) {
-          this._pseudoController.togglePseudo(el, 'hover', false);
-        }
-
-        for (const el of entered) {
-          this._pseudoController.togglePseudo(el, 'hover', true);
-        }
-      }
-
       // --- LEAVE (inner → outer, level-aware relatedTarget) ---
       for (let k = 0; k < exited.length; k++) {
         const el = exited[k];
@@ -1876,470 +1782,6 @@
       }
 
       this._lastPath = newPath;
-    }
-  }
-
-  class ForcedPseudo {
-    constructor({
-      pseudos = ["hover", "active"],
-      pollMs = 500,
-    } = {}) {
-      this.prefix = Math.random().toString(36).slice(2) + "_";
-      this.pseudos = new Set(pseudos);
-
-      /** @type {Record<string, string>} */
-      this.classes = {};
-      for (const p of pseudos) {
-        this.classes[p] = this.prefix + p;
-      }
-
-      this.sourceToMirror = new WeakMap();
-      this.sourceState = new WeakMap();
-      this.ownedSheets = new WeakSet();
-      this.knownSources = new Set();
-      this.blockedSheets = new WeakSet();
-      this.fetched = new WeakSet();
-
-      this.pollMs = pollMs;
-      this.timer = undefined;
-
-      /** @type {any} */
-      // @ts-ignore
-      const w = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
-      /** @type {ForcedPseudo | undefined} */
-      const singleton = w._ForcedPseudo_instance;
-      if (singleton) return singleton;
-      w._ForcedPseudo_instance = this;
-
-      this.init();
-      return this;
-    }
-
-    init() {
-      this.reconcile();
-      this.timer = setInterval(() => this.reconcile(), this.pollMs);
-      return this;
-    }
-
-    destroy() {
-      clearInterval(this.timer);
-
-      document.adoptedStyleSheets =
-        document.adoptedStyleSheets.filter(
-          s => !this.ownedSheets.has(s)
-        );
-
-      this.knownSources.clear();
-    }
-
-    /**
-     * @param {Element} el
-     * @param {string} pseudo
-     * @param {boolean} [force]
-     */
-    togglePseudo(el, pseudo, force) {
-      const cls = this.classes[pseudo];
-      if (!cls || !el) return;
-
-      if (force === undefined) {
-        el.classList.toggle(cls);
-      } else {
-        el.classList.toggle(cls, !!force);
-      }
-    }
-
-    reconcile() {
-      const sources = [
-        ...document.styleSheets,
-        ...document.adoptedStyleSheets
-      ].filter(s =>
-        !this.ownedSheets.has(s) &&
-        !this.blockedSheets.has(s)
-      );
-
-      const current = new Set(sources);
-
-      for (const sheet of sources) {
-        this.knownSources.add(sheet);
-        this.sync(sheet);
-      }
-
-      for (const sheet of [...this.knownSources]) {
-        if (!current.has(sheet)) {
-          this.remove(sheet);
-        }
-      }
-
-      this.reorder(sources);
-    }
-
-    /**
-     * @param {string} url 
-     * @returns {Promise<string>}
-     */
-    fetchCSS(url) {
-      return new Promise((resolve, reject) => {
-        if (typeof GM_xmlhttpRequest === "function") {
-          GM_xmlhttpRequest({
-            method: "GET",
-            url,
-            onload: res => res.responseText ? resolve(res.responseText) : reject(),
-            onerror: reject
-          });
-        } else {
-          fetch(url)
-            .then(r => r.text())
-            .then(resolve)
-            .catch(reject);
-        }
-      });
-    }
-
-    /**
-     * @param {string} cssText
-     * @param {string} baseHref
-     */
-    resolveUrls(cssText, baseHref) {
-      if (!baseHref || !cssText) return cssText;
-
-      const SCANNING = 0;
-      const STRING = 1;
-      const URL_STRING = 2;
-      const RAW_URL = 3;
-
-      let state = SCANNING;
-      let quoteChar = null;
-      let urlBuffer = "";
-      let parenLevel = 0;
-      let imageSetLevel = -1;
-
-      let result = "";
-      let i = 0;
-      const len = cssText.length;
-
-      /**
-       * @param {string} path 
-       */
-      const resolve = (path) => {
-        path = path.trim();
-        // Ignore empty paths, internal IDs, data URIs, and already absolute URLs
-        if (!path || path.startsWith('#') || /^(?:data:|https?:|\/\/)/i.test(path)) {
-          return path;
-        }
-        try {
-          return new URL(path, baseHref).href;
-        } catch {
-          return path;
-        }
-      };
-
-      while (i < len) {
-        const char = cssText[i];
-
-        if (state === SCANNING) {
-          // Handle escapes to avoid false positives
-          if (char === '\\') {
-            result += char + (cssText[i + 1] || '');
-            i += 2;
-            continue;
-          }
-
-          // Entering a string
-          if (char === '"' || char === "'") {
-            quoteChar = char;
-            // If we are inside an image-set(), strings are implicitly URLs
-            state = (imageSetLevel !== -1) ? URL_STRING : STRING;
-
-            if (state === STRING) {
-              result += char; // URL_STRING defers adding the quote until resolution
-            }
-            i++;
-            continue;
-          }
-
-          if (char === '(') {
-            parenLevel++;
-            result += char;
-            i++;
-            continue;
-          }
-
-          if (char === ')') {
-            parenLevel--;
-            if (imageSetLevel !== -1 && parenLevel < imageSetLevel) {
-              imageSetLevel = -1; // Exited the image-set()
-            }
-            result += char;
-            i++;
-            continue;
-          }
-
-          // Detect url()
-          if ((char === 'u' || char === 'U') && cssText.slice(i, i + 4).toLowerCase() === 'url(') {
-            result += cssText.slice(i, i + 4);
-            i += 4;
-            parenLevel++;
-
-            // Fast-forward through whitespace inside url(
-            while (i < len && /\s/.test(cssText[i])) {
-              result += cssText[i];
-              i++;
-            }
-
-            if (i < len) {
-              if (cssText[i] === '"' || cssText[i] === "'") {
-                quoteChar = cssText[i];
-                state = URL_STRING;
-                i++;
-              } else {
-                state = RAW_URL;
-                urlBuffer = cssText[i]; // Start capturing the unquoted path
-                i++;
-              }
-            }
-            continue;
-          }
-
-          const imgset_RE = /^(?:-webkit-)?image-set\(/iy;
-          // Detect image-set() or -webkit-image-set()
-          if ((char === 'i' || char === 'I' || char === '-')) {
-            imgset_RE.lastIndex = i;
-            const match = cssText.match(imgset_RE)?.[0];
-            if (match) {
-              result += match;
-              i += match.length;
-              parenLevel++;
-              imageSetLevel = parenLevel;
-              continue;
-            }
-          }
-
-          result += char;
-          i++;
-        }
-        else if (state === STRING) {
-          if (char === '\\') {
-            result += char + (cssText[i + 1] || '');
-            i += 2;
-          } else if (char === quoteChar) {
-            result += char;
-            state = SCANNING;
-            i++;
-          } else {
-            result += char;
-            i++;
-          }
-        }
-        else if (state === URL_STRING) {
-          if (char === '\\') {
-            urlBuffer += char + (cssText[i + 1] || '');
-            i += 2;
-          } else if (char === quoteChar) {
-            result += quoteChar + resolve(urlBuffer) + quoteChar;
-            urlBuffer = "";
-            state = SCANNING;
-            i++;
-          } else {
-            urlBuffer += char;
-            i++;
-          }
-        }
-        else if (state === RAW_URL) {
-          if (char === '\\') {
-            urlBuffer += char + (cssText[i + 1] || '');
-            i += 2;
-          } else if (char === ')') {
-            // A raw URL ends at the closing parenthesis
-            result += resolve(urlBuffer) + ')';
-            urlBuffer = "";
-            parenLevel--;
-
-            if (imageSetLevel !== -1 && parenLevel < imageSetLevel) {
-              imageSetLevel = -1;
-            }
-
-            state = SCANNING;
-            i++;
-          } else {
-            urlBuffer += char;
-            i++;
-          }
-        }
-      }
-
-      return result;
-    }
-
-    /**
-   * @param {CSSStyleSheet} sheet
-   */
-    async processExternalSheet(sheet) {
-      if (!sheet.href || this.fetched.has(sheet)) return;
-      this.fetched.add(sheet);
-
-      try {
-        const rawCss = await this.fetchCSS(sheet.href);
-
-        // 1. Resolve URLs once on the raw string
-        const sanitizedCss = this.resolveUrls(rawCss, sheet.href);
-
-        // 2. Parse the sanitized CSS
-        const temp = new CSSStyleSheet();
-        temp.replaceSync(sanitizedCss);
-
-        // 3. Transform and create the mirror
-        const transformed = this.collect(temp.cssRules, temp);
-        this.create(sheet, transformed);
-        this.sourceState.set(sheet, transformed);
-
-        // Trigger an immediate reconcile to snap the new styles in
-        this.reconcile();
-      } catch (e) {
-        this.blockedSheets.add(sheet);
-        this.remove(sheet);
-      }
-    }
-
-    /**
-     * @param {CSSStyleSheet} sheet
-     */
-    sync(sheet) {
-      let rules;
-      try {
-        rules = sheet.cssRules;
-      } catch {
-        if (sheet.href) {
-          this.processExternalSheet(sheet);
-        } else {
-          this.blockedSheets.add(sheet);
-          this.remove(sheet);
-        }
-        return;
-      }
-
-      if (!rules) return;
-
-      const css = this.collect(rules, sheet);
-
-      const sig =
-        css +
-        "|" +
-        sheet.disabled +
-        "|" +
-        (sheet.media?.mediaText || "");
-
-      if (!this.sourceToMirror.has(sheet)) {
-        this.create(sheet, css);
-        this.sourceState.set(sheet, sig);
-        return;
-      }
-
-      if (this.sourceState.get(sheet) !== sig) {
-        this.create(sheet, css);
-        this.sourceState.set(sheet, sig);
-      }
-
-      const mirror = this.sourceToMirror.get(sheet);
-      if (mirror) {
-        mirror.disabled = sheet.disabled;
-      }
-    }
-
-    /**
-     * @param {CSSStyleSheet} sheet
-     * @param {string} css
-     */
-    create(sheet, css) {
-      let mirror = this.sourceToMirror.get(sheet);
-
-      if (!mirror) {
-        mirror = new CSSStyleSheet({ media: sheet.media });
-        this.sourceToMirror.set(sheet, mirror);
-        this.ownedSheets.add(mirror);
-      }
-
-      mirror.replaceSync(css);
-    }
-
-    /**
-     * @param {CSSStyleSheet} sheet
-     */
-    remove(sheet) {
-      const mirror = this.sourceToMirror.get(sheet);
-      if (mirror) {
-        document.adoptedStyleSheets =
-          document.adoptedStyleSheets.filter(s => s !== mirror);
-
-        this.sourceToMirror.delete(sheet);
-        this.sourceState.delete(sheet);
-      }
-
-      this.knownSources.delete(sheet);
-    }
-
-    /**
-     * @param {CSSStyleSheet[]} sources
-     */
-    reorder(sources) {
-      const mirrors = [];
-
-      for (const s of sources) {
-        const m = this.sourceToMirror.get(s);
-        if (m) mirrors.push(m);
-      }
-
-      const external =
-        document.adoptedStyleSheets.filter(
-          s => !this.ownedSheets.has(s)
-        );
-
-      const newAdoptedStyleSheets = [...external, ...mirrors];
-      for (let i = 0; i < newAdoptedStyleSheets.length; i++) {
-        if (document.adoptedStyleSheets[i] !== newAdoptedStyleSheets[i])
-          document.adoptedStyleSheets[i] = newAdoptedStyleSheets[i];
-      }
-      if (document.adoptedStyleSheets.length > newAdoptedStyleSheets.length)
-        document.adoptedStyleSheets.length = newAdoptedStyleSheets.length;
-    }
-
-    /**
-     * @param {CSSRuleList} rules
-     * @param {CSSStyleSheet} sheet
-     */
-    collect(rules, sheet) {
-      let out = "";
-
-      for (const rule of rules) {
-        if (rule instanceof CSSStyleRule) {
-          const sel = this.transform(rule.selectorText);
-          out += `${sel} { ${rule.style.cssText} }\n`;
-        } else if ("cssRules" in rule) {
-          const r = /** @type {CSSGroupingRule} */ (rule);
-          const inner = this.collect(r.cssRules, sheet);
-          if (!inner.trim()) continue;
-
-          const i = r.cssText.indexOf("{");
-          if (i === -1) continue;
-
-          const prefix = r.cssText.slice(0, i);
-          out += `${prefix}{\n${inner}}\n`;
-        }
-      }
-
-      return out;
-    }
-
-    /**
-     * @param {string} selector
-     */
-    transform(selector) {
-      return selector.replace(
-        /(?<!:):([a-z0-9-]+)\b(?![^\[]*\])(?!\()/gi,
-        (_, name) => {
-          if (!this.pseudos.has(name)) return ":" + name;
-          return `:is(${":" + name}, ${"." + this.prefix + name})`;
-        }
-      );
     }
   }
   //#endregion
