@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.9.5
+// @version     1.2.9.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -1902,13 +1902,14 @@
       z-index: 999999;
       background: var(--card);
       border-radius: 16px;
-      padding: 20px 24px;
+      padding: 20px;
       box-shadow: 0 1px 4px #1613160a;
       display: flex;
       flex-direction: column;
       gap: 16px;
 
-      width: min(300px, calc(100vw - 2em));
+      width: 300px;
+      max-width: calc(100vw - 2em);
       transition: width 0.5s, height 0.5s, border-radius 0.5s;
     }
 
@@ -2003,8 +2004,8 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      margin-top: 8px;
-      max-height: 240px;
+      padding-top: 8px;
+      max-height: 248px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--muted) transparent;
