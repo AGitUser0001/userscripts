@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.9.8
+// @version     1.2.9.9
 // @author      auser0001
 // ==/UserScript==
 
@@ -2086,7 +2086,6 @@
       padding: 3px 7px;
       border-radius: 999px;
       flex-shrink: 0;
-      margin-top: 2px;
     }
 
     .rc-result.is-win {
