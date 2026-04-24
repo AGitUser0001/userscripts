@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.7
+// @version     1.2.9
 // @author      auser0001
 // ==/UserScript==
 
@@ -1894,262 +1894,272 @@
 
   const replaySS = new CSSStyleSheet();
   replaySS.replaceSync(`
-  .rc-root {
-    position: fixed;
-    top: 3em;
-    right: 1em;
-    z-index: 999999;
-    background: var(--card);
-    border-radius: 16px;
-    padding: 20px 24px;
-    box-shadow: 0 1px 4px #1613160a;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    min-width: min(300px, 100vw - 2em);
-    max-width: 100vw - 2em;
-    transition: all 0.2s ease; 
-  }
+    /* --- Root --- */
+    .rc-root {
+      position: fixed;
+      top: 3em;
+      right: 1em;
+      z-index: 999999;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 4px #1613160a;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
 
-  /* Header - matches .rank-ladder-title and .lb-head */
-  .rc-header {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
-    margin: 0;
-  }
-
-  /* Actions wrapper */
-  .rc-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .rc-actions .row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  /* Standard Secondary Action Buttons - mapped from .choose-btn & .secondary-btn */
-  .rc-actions button {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, transform 0.15s;
-    flex: 1 1 auto;
-    text-align: center;
-  }
-
-  .rc-actions button:not([data-act="replay"]):hover:not(:disabled) {
-    color: var(--dark);
-    border-color: var(--accent);
-    transform: translateY(-1px);
-  }
-
-  /* Replay Button - Highlighted as a primary action (mapped from .primary-btn) */
-  .rc-actions button[data-act="replay"] {
-    background: var(--dark);
-    color: var(--bg);
-    border: 1px solid var(--dark);
-  }
-
-  .rc-actions button[data-act="replay"]:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px #16131622;
-  }
-
-  /* Delete Button - Danger styling mapped from .err / .stakes-neg */
-  .rc-actions button[data-act="delete"]:hover:not(:disabled) {
-    color: #b8432e;
-    border-color: rgba(184, 67, 46, 0.3);
-    background: #b8432e14;
-  }
-
-  [data-theme=dark] .rc-actions button[data-act="delete"]:hover:not(:disabled) {
-    color: #e08668;
-    border-color: rgba(224, 134, 104, 0.3);
-    background: #e086681a;
-  }
-
-  /* List container - styling borrowed from .lb-table */
-  .rc-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 8px;
-    max-height: 240px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--muted) transparent;
-  }
-
-  /* Scrollbar styles matching the existing dark/light mode logic */
-  .rc-list::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .rc-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .rc-list::-webkit-scrollbar-thumb {
-    background: var(--muted);
-    border-radius: 4px;
-  }
-
-  [data-theme=dark] .rc-list::-webkit-scrollbar-thumb {
-    background: #ffffff2e;
-  }
-
-  [data-theme=dark] .rc-list {
-    scrollbar-color: rgba(255,255,255,.18) transparent;
-  }
-
-  /* --- Collapsible Logic --- */
-
-  /* Make the header clickable */
-  .rc-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  /* Subtle toggle button styling */
-  .rc-toggle-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 10px;
-    cursor: pointer;
-    padding: 4px;
-    transition: transform 0.2s ease;
-  }
-
-  /* Hide content when collapsed */
-  .rc-root.is-collapsed .rc-content {
-    display: none;
-  }
-
-  /* Remove border from header when closed so it looks clean */
-  .rc-root.is-collapsed .rc-header {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  /* Flip the arrow when collapsed */
-  .rc-root.is-collapsed .rc-toggle-btn {
-    transform: rotate(-90deg);
-  }
-
-  /* --- Mobile: Small Square Mode --- */
-  @media (max-width: 600px) {
-    /* When collapsed on mobile, shrink to a perfect square */
-    .rc-root.is-collapsed {
-      min-width: 0;
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      overflow: hidden;
-      justify-content: center;
-      border-radius: 12px; /* Slightly rounder for a floating icon look */
+      width: min(300px, calc(100vw - 2em));
+      transition: all 0.2s ease;
     }
 
-    /* Hide the text title when in square mode */
-    .rc-root.is-collapsed .rc-title {
+    /* --- Header --- */
+    .rc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .rc-toggle-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 10px;
+      cursor: pointer;
+      padding: 4px;
+      transition: transform 0.2s ease;
+    }
+
+    /* --- Actions --- */
+    .rc-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rc-actions .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rc-actions button {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, transform 0.15s;
+      flex: 1 1 auto;
+      text-align: center;
+    }
+
+    .rc-actions button:not([data-act="replay"]):hover:not(:disabled) {
+      color: var(--dark);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .rc-actions button[data-act="replay"] {
+      background: var(--dark);
+      color: var(--bg);
+      border: 1px solid var(--dark);
+    }
+
+    .rc-actions button[data-act="replay"]:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px #16131622;
+    }
+
+    .rc-actions button[data-act="delete"]:hover:not(:disabled) {
+      color: #b8432e;
+      border-color: rgba(184, 67, 46, 0.3);
+      background: #b8432e14;
+    }
+
+    [data-theme=dark] .rc-actions button[data-act="delete"]:hover:not(:disabled) {
+      color: #e08668;
+      border-color: rgba(224, 134, 104, 0.3);
+      background: #e086681a;
+    }
+
+    /* --- List --- */
+    .rc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--muted) transparent;
+    }
+
+    .rc-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .rc-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .rc-list::-webkit-scrollbar-thumb {
+      background: var(--muted);
+      border-radius: 4px;
+    }
+
+    [data-theme=dark] .rc-list::-webkit-scrollbar-thumb {
+      background: #ffffff2e;
+    }
+
+    [data-theme=dark] .rc-list {
+      scrollbar-color: rgba(255,255,255,.18) transparent;
+    }
+
+    /* --- List Items --- */
+    .rc-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s;
+    }
+
+    /* Slight dim for non-selected */
+    .rc-item:not(.is-selected) {
+      opacity: 0.85;
+    }
+
+    .rc-item:hover {
+      background: var(--bg);
+      transform: translateY(-1px);
+      opacity: 1;
+    }
+
+    /* Selected */
+    .rc-item.is-selected {
+      background: var(--dark);
+      color: var(--bg);
+      opacity: 1;
+    }
+
+    /* --- Main row --- */
+    .rc-item-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Opponent name wraps cleanly */
+    .rc-opponent {
+      flex: 1;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    /* --- Result badge --- */
+    .rc-result {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .rc-result.is-win {
+      color: #2e8b57;
+      background: #2e8b5715;
+    }
+
+    .rc-result.is-loss {
+      color: #b8432e;
+      background: #b8432e15;
+    }
+
+    .rc-result.is-unknown {
+      color: var(--muted);
+    }
+
+    /* --- Time --- */
+    .rc-item-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .rc-item.is-selected .rc-item-sub {
+      color: rgba(255,255,255,0.7);
+    }
+
+    .rc-time {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* --- Empty --- */
+    .rc-empty {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 12px;
+    }
+
+    /* --- Collapsible --- */
+    .rc-root.is-collapsed .rc-content {
       display: none;
     }
 
-    /* Center the arrow in the square */
     .rc-root.is-collapsed .rc-header {
-      justify-content: center;
-      width: 100%;
-      height: 100%;
+      border-bottom: none;
+      padding-bottom: 0;
     }
 
-    /* Reset the arrow flip on mobile so it looks like an "expand" icon */
     .rc-root.is-collapsed .rc-toggle-btn {
-      transform: rotate(0deg); 
-      font-size: 14px; /* Make it a bit bigger for tap targets */
+      transform: rotate(-90deg);
     }
-  }
 
-  .rc-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
-  }
+    /* --- Mobile --- */
+    @media (max-width: 600px) {
+      .rc-root.is-collapsed {
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        overflow: hidden;
+        justify-content: center;
+        border-radius: 12px;
+      }
 
-  .rc-item:hover {
-    background: var(--bg);
-    transform: translateY(-1px);
-  }
+      .rc-root.is-collapsed .rc-title {
+        display: none;
+      }
 
-  .rc-item.is-selected {
-    background: var(--dark);
-    color: var(--bg);
-  }
+      .rc-root.is-collapsed .rc-header {
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
 
-  .rc-item-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .rc-opponent {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .rc-result {
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-weight: 700;
-  }
-
-  .rc-result.is-win {
-    color: #2e8b57;
-  }
-
-  .rc-result.is-loss {
-    color: #b8432e;
-  }
-
-  .rc-result.is-unknown {
-    color: var(--muted);
-  }
-
-  .rc-item-sub {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .rc-empty {
-    text-align: center;
-    font-size: 12px;
-    color: var(--muted);
-    padding: 12px;
-  }
+      .rc-root.is-collapsed .rc-toggle-btn {
+        transform: rotate(0deg);
+        font-size: 14px;
+      }
+    }
   `);
   document.adoptedStyleSheets.push(replaySS);
 
@@ -2391,16 +2401,16 @@
         const resultClass = ['is-unknown', 'is-win', 'is-loss'][r.result];
 
         el.innerHTML = `
-      <div class="rc-item-main">
-        <span class="rc-opponent">${r.data.opponentName}</span>
-        <span class="rc-result ${resultClass}">${resultLabel}</span>
-      </div>
-      <div class="rc-item-sub">
-        <span class="rc-time" data-ts="${time.getTime()}" title="${time.toLocaleString()}">
-          ${this._formatTime(time)}
-        </span>
-      </div>
-    `;
+          <div class="rc-item-main">
+            <span class="rc-opponent">${r.data.opponentName}</span>
+            <span class="rc-result ${resultClass}">${resultLabel}</span>
+          </div>
+          <div class="rc-item-sub">
+            <span class="rc-time" data-ts="${time.getTime()}" title="${time.toLocaleString()}">
+              ${this._formatTime(time)}
+            </span>
+          </div>
+        `;
 
         el.onclick = () => {
           this.selectedId = r.id;
@@ -2412,7 +2422,7 @@
     }
 
     _df = new Intl.DurationFormat(undefined, {
-      style: 'short'
+      style: 'narrow'
     })
     /**
      * @param {Date} date 
