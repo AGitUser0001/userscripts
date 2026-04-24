@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8
+// @version     1.2.8.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2141,10 +2141,6 @@
   .rc-item-sub {
     font-size: 11px;
     color: var(--muted);
-  }
-
-  .rc-item.is-selected .rc-item-sub {
-    color: rgba(255,255,255,0.7);
   }
 
   .rc-empty {
