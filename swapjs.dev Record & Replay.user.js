@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.4
+// @version     1.2.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -1037,17 +1037,15 @@
       if (this.mode === 'replay') {
         this._stopUiTimer();
 
-        if (this.dragEl) {
-          const lastEvent = this.data.events.at(-1);
-          if (lastEvent && 'm' in lastEvent) {
-            const loop = async () => {
-              while (!this._destroyed) {
-                await new Promise(r => requestAnimationFrame(r));
-                this._handle(lastEvent);
-              }
-            };
-            loop();
-          }
+        const lastMoveEvent = this.data.events.findLast(e => 'm' in e)
+        if (lastMoveEvent) {
+          const loop = async () => {
+            while (!this._destroyed) {
+              await new Promise(r => requestAnimationFrame(r));
+              this._handle(lastMoveEvent);
+            }
+          };
+          loop();
         }
       }
     }
