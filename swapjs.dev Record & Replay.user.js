@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.3
+// @version     1.2.8.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -1907,6 +1907,7 @@
     flex-direction: column;
     gap: 16px;
     min-width: min(300px, 100vw - 2em);
+    max-width: 100vw - 2em;
     transition: all 0.2s ease; 
   }
 
@@ -2335,6 +2336,7 @@
       document.body.appendChild(el);
 
       this._wireUI(el);
+      this._startTimeUpdates();
 
       return el;
     }
@@ -2394,8 +2396,8 @@
         <span class="rc-result ${resultClass}">${resultLabel}</span>
       </div>
       <div class="rc-item-sub">
-        <span title="${time.toLocaleString()}">
-          ${this._relativeTime(time)}
+        <span class="rc-time" data-ts="${time.getTime()}" title="${time.toLocaleString()}">
+          ${this._formatTime(time)}
         </span>
       </div>
     `;
@@ -2410,38 +2412,64 @@
     }
 
     _rtf = new Intl.RelativeTimeFormat(undefined, {
-      numeric: 'auto'
+      numeric: 'auto', style: 'short'
     });
-
 
     /**
      * @param {Date} date 
-     * @returns 
+     * @returns {string}
      */
-    _relativeTime(date) {
+    _formatTime(date) {
+      const now = Date.now();
+      const diffSec = (date.getTime() - now) / 1000;
+      const absSec = Math.abs(diffSec);
+
       const rtf = this._rtf;
 
-      const diff = (date.getTime() - Date.now()) / 1000;
-
-      const units = /** @type {const} */([
-        { unit: 'year', secs: 60 * 60 * 24 * 365 },
-        { unit: 'month', secs: 60 * 60 * 24 * 30 },
-        { unit: 'week', secs: 60 * 60 * 24 * 7 },
-        { unit: 'day', secs: 60 * 60 * 24 },
-        { unit: 'hour', secs: 60 * 60 },
-        { unit: 'minute', secs: 60 },
-        { unit: 'second', secs: 1 }
-      ]);
-
-      for (const { unit, secs } of units) {
-        const value = diff / secs;
-
-        if (Math.abs(value) >= 1) {
-          return rtf.format(Math.round(value), unit);
+      // < 1 hour → seconds/minutes
+      if (absSec < 3600) {
+        if (absSec < 60) {
+          return rtf.format(Math.round(diffSec), 'second');
         }
+        return rtf.format(Math.round(diffSec / 60), 'minute');
       }
 
-      return rtf.format(Math.round(diff), 'second');
+      // < 24 hours → hours
+      if (absSec < 86400) {
+        return rtf.format(Math.round(diffSec / 3600), 'hour');
+      }
+
+      const d = new Date(date);
+
+      // < 7 days → weekday + time
+      if (absSec < 604800) {
+        return d.toLocaleString(undefined, {
+          weekday: 'short',
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      }
+
+      // older → full date
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    _startTimeUpdates() {
+      if (this._timeInterval) return;
+
+      this._timeInterval = setInterval(() => {
+        /** @type {NodeListOf<HTMLElement>} */
+        const nodes = this.listEl.querySelectorAll('.rc-time');
+
+        for (const el of nodes) {
+          const ts = Number(el.dataset.ts);
+          el.textContent = this._formatTime(new Date(ts));
+        }
+      }, 10000);
     }
 
     /* ================= ACTIONS ================= */
