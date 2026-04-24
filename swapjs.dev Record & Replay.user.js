@@ -2493,7 +2493,7 @@
           const ts = Number(el.dataset.ts);
           el.textContent = this._formatTime(new Date(ts));
         }
-      }, 500);
+      }, 10000);
     }
 
     /* ================= ACTIONS ================= */
