@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.9.6
+// @version     1.2.9.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -2493,7 +2493,7 @@
           const ts = Number(el.dataset.ts);
           el.textContent = this._formatTime(new Date(ts));
         }
-      }, 10000);
+      }, 500);
     }
 
     /* ================= ACTIONS ================= */
