@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2
+// @version     1.2.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -1025,20 +1025,6 @@
       }
 
       this._flushOpponentUntil(Infinity);
-
-      if (this.dragEl) {
-        const from = this.bars.indexOf(this.dragEl);
-        const to = this.targetIndex;
-
-        this._move(from, to);
-        this.dragEl.classList.remove('dragging');
-
-        this.dragEl = null;
-        this.dragIndex = -1;
-        this.targetIndex = -1;
-
-        this._layout();
-      }
 
       this._stopUiTimer();
     }
