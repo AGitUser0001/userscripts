@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.7
+// @version     1.2.8
 // @author      auser0001
 // ==/UserScript==
 
@@ -1276,7 +1276,7 @@
     /**
      * @param {Record<string, { url: string, x?: number, y?: number }>} cursorMap
      */
-    constructor(cursorMap = {}, enablePseudo = false) {
+    constructor(cursorMap = {}) {
       this.x = window.innerWidth / 2;
       this.y = window.innerHeight / 2;
       this.isDown = false;
@@ -1895,6 +1895,10 @@
   const replaySS = new CSSStyleSheet();
   replaySS.replaceSync(`
   .rc-root {
+    position: fixed;
+    top: 3em;
+    right: 1em;
+    z-index: 999999;
     background: var(--card);
     border-radius: 16px;
     padding: 20px 24px;
@@ -1902,7 +1906,8 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-width: 310px;
+    min-width: 300px;
+    transition: all 0.2s ease; 
   }
 
   /* Header - matches .rank-ladder-title and .lb-head */
@@ -2050,10 +2055,6 @@
 
   /* --- Mobile: Small Square Mode --- */
   @media (max-width: 600px) {
-    .rc-root {
-      transition: all 0.2s ease; /* Smooth morphing */
-    }
-
     /* When collapsed on mobile, shrink to a perfect square */
     .rc-root.is-collapsed {
       min-width: 0;
@@ -2083,6 +2084,75 @@
       font-size: 14px; /* Make it a bit bigger for tap targets */
     }
   }
+
+  .rc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .rc-item:hover {
+    background: var(--bg);
+    transform: translateY(-1px);
+  }
+
+  .rc-item.is-selected {
+    background: var(--dark);
+    color: var(--bg);
+  }
+
+  .rc-item-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .rc-opponent {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rc-result {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  .rc-result.is-win {
+    color: #2e8b57;
+  }
+
+  .rc-result.is-loss {
+    color: #b8432e;
+  }
+
+  .rc-result.is-unknown {
+    color: var(--muted);
+  }
+
+  .rc-item-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .rc-item.is-selected .rc-item-sub {
+    color: rgba(255,255,255,0.7);
+  }
+
+  .rc-empty {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 12px;
+  }
   `);
   document.adoptedStyleSheets.push(replaySS);
 
@@ -2106,7 +2176,7 @@
       grabbing: { url: "https://tobiasahlin.com/static/cursors/drag.png" },
       'zoom-in': { url: "https://tobiasahlin.com/static/cursors/zoom-in.png" },
       'zoom-out': { url: "https://tobiasahlin.com/static/cursors/zoom-out.png" },
-    }, true);
+    });
 
     constructor() {
       /** @type {IDBDatabase | null} */
@@ -2266,19 +2336,9 @@
         el.classList.toggle('is-collapsed');
       });
 
-      Object.assign(el.style, {
-        position: 'fixed',
-        top: '3em',
-        right: '1em',
-        zIndex: 999999,
-        borderRadius: '6px',
-        overflow: 'hidden'
-      });
-
       document.body.appendChild(el);
 
       this._wireUI(el);
-      // this._makeDraggable(el);
 
       return el;
     }
@@ -2303,49 +2363,46 @@
       });
     }
 
-    /**
-     * @param {HTMLElement} root
-     */
-    _makeDraggable(root) {
-      let dx = 0, dy = 0, drag = false;
-
-      const header = assert(root.querySelector('.rc-header'));
-      if (!(header instanceof HTMLElement))
-        throw new Error('Header is not HTMLElement.');
-
-      header.onpointerdown = e => {
-        drag = true;
-        dx = e.clientX - root.offsetLeft;
-        dy = e.clientY - root.offsetTop;
-      };
-
-      window.onpointermove = e => {
-        if (!drag) return;
-        root.style.left = (e.clientX - dx) + 'px';
-        root.style.top = (e.clientY - dy) + 'px';
-        root.style.right = 'auto';
-      };
-
-      window.onpointerup = () => drag = false;
-    }
-
     _renderList() {
       this.listEl.innerHTML = '';
 
+      if (!this.replays.length) {
+        const empty = document.createElement('div');
+        empty.className = 'rc-empty';
+        empty.textContent = 'No replays yet';
+        this.listEl.appendChild(empty);
+        return;
+      }
+
+      // Ensure one default selection
+      if (this.selectedId == null) {
+        this.selectedId = this.replays[0].id;
+      }
+
       for (const r of this.replays) {
         const el = document.createElement('div');
+        el.className = 'rc-item';
 
-        const label =
-          `${new Date(r.ts).toLocaleTimeString()} - ${r.data.opponentName} - ${['?', 'W', 'L'][r.result]}`;
-
-        el.textContent = label;
-        el.style.padding = '4px';
-        el.style.cursor = 'pointer';
-
-        if (this.selectedId === r.id || this.selectedId === null) {
-          this.selectedId = r.id;
-          el.style.background = '#333';
+        if (this.selectedId === r.id) {
+          el.classList.add('is-selected');
         }
+
+        const time = new Date(r.ts);
+
+        const resultLabel = ['?', 'W', 'L'][r.result];
+        const resultClass = ['is-unknown', 'is-win', 'is-loss'][r.result];
+
+        el.innerHTML = `
+      <div class="rc-item-main">
+        <span class="rc-opponent">${r.data.opponentName}</span>
+        <span class="rc-result ${resultClass}">${resultLabel}</span>
+      </div>
+      <div class="rc-item-sub">
+        <span title="${time.toLocaleString()}">
+          ${this._relativeTime(time)}
+        </span>
+      </div>
+    `;
 
         el.onclick = () => {
           this.selectedId = r.id;
@@ -2354,6 +2411,41 @@
 
         this.listEl.appendChild(el);
       }
+    }
+
+    _rtf = new Intl.RelativeTimeFormat(undefined, {
+      numeric: 'auto'
+    });
+
+
+    /**
+     * @param {Date} date 
+     * @returns 
+     */
+    _relativeTime(date) {
+      const rtf = this._rtf;
+
+      const diff = (date.getTime() - Date.now()) / 1000;
+
+      const units = /** @type {const} */([
+        { unit: 'year', secs: 60 * 60 * 24 * 365 },
+        { unit: 'month', secs: 60 * 60 * 24 * 30 },
+        { unit: 'week', secs: 60 * 60 * 24 * 7 },
+        { unit: 'day', secs: 60 * 60 * 24 },
+        { unit: 'hour', secs: 60 * 60 },
+        { unit: 'minute', secs: 60 },
+        { unit: 'second', secs: 1 }
+      ]);
+
+      for (const { unit, secs } of units) {
+        const value = diff / secs;
+
+        if (Math.abs(value) >= 1) {
+          return rtf.format(Math.round(value), unit);
+        }
+      }
+
+      return rtf.format(Math.round(diff), 'second');
     }
 
     /* ================= ACTIONS ================= */
