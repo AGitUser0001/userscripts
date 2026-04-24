@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.9
+// @version     1.2.9.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -1909,7 +1909,11 @@
       gap: 16px;
 
       width: min(300px, calc(100vw - 2em));
-      transition: all 0.2s ease;
+      transition: width 0.5s, height 0.5s, border-radius 0.5s;
+    }
+
+    .rc-root * {
+      box-sizing: border-box;
     }
 
     /* --- Header --- */
@@ -2102,10 +2106,6 @@
     .rc-item-sub {
       font-size: 11px;
       color: var(--muted);
-    }
-
-    .rc-item.is-selected .rc-item-sub {
-      color: rgba(255,255,255,0.7);
     }
 
     .rc-time {
