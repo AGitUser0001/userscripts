@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.2
+// @version     1.2.8.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -1906,7 +1906,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-width: 310px;
+    min-width: min(300px, 100vw - 2em);
     transition: all 0.2s ease; 
   }
 
@@ -1940,7 +1940,7 @@
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 8px 14px;
+    padding: 8px 10px;
     font-size: 13px;
     font-weight: 600;
     color: var(--muted);
