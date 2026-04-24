@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.1
+// @version     1.2.8.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -1906,7 +1906,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-width: 300px;
+    min-width: 310px;
     transition: all 0.2s ease; 
   }
 
