@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.1
+// @version     1.3.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -1973,7 +1973,6 @@
     .rc-actions button:not([data-act="replay"]):hover:not(:disabled) {
       color: var(--dark);
       border-color: var(--accent);
-      transform: translateY(-1px);
     }
 
     .rc-actions button[data-act="replay"] {
