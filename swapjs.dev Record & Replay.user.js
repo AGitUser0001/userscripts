@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.1
+// @version     1.2.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -1020,13 +1020,27 @@
       for (const e of this.data.events) {
         await this._wait(e.t);
         this._flushOpponentUntil(e.t);
-        await this._handle(e);
+        this._handle(e);
         if (this._destroyed) return;
       }
 
       this._flushOpponentUntil(Infinity);
 
       this._stopUiTimer();
+
+      if (this.dragEl) {
+        const lastEvent = this.data.events.at(-1);
+        if (lastEvent && 'm' in lastEvent) {
+          const tick = () => {
+            if (this._destroyed) return;
+            this._handle(lastEvent);
+
+            requestAnimationFrame(tick);
+          };
+
+          requestAnimationFrame(tick);
+        }
+      }
     }
 
     /**
@@ -1044,9 +1058,9 @@
 
     /**
      * @param {RecordedEvent} e
-     * @returns {Promise<void>}
+     * @returns {void}
      */
-    async _handle(e) {
+    _handle(e) {
       if (this.mode !== 'replay') return;
 
       if ('m' in e) {
