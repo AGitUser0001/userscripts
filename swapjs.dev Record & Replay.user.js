@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.3
+// @version     1.2.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -657,9 +657,6 @@
         this._opponentEvents = this._convertPlayerToOpponent();
       }
 
-      /** @type {number} */
-      this._nextOpponentEventIndex = 0;
-
       this._onResize = this._onResize.bind(this);
 
       this._resetInjectedState();
@@ -993,54 +990,64 @@
     }
 
     /**
-     * @param {number} t
+     * @param {OpponentEvent} ev
      * @returns {void}
      */
-    _flushOpponentUntil(t) {
-      while (
-        this._nextOpponentEventIndex < this._opponentEvents.length &&
-        this._opponentEvents[this._nextOpponentEventIndex].t <= t
-      ) {
-        const ev = this._opponentEvents[this._nextOpponentEventIndex++];
-        this._updateOpponent(ev.o);
-        this._lastOpponentMoveCount++;
-        this._renderMoveCounts();
-      }
+    _handleOpponent(ev) {
+      this._updateOpponent(ev.o);
+      this._lastOpponentMoveCount++;
+      this._renderMoveCounts();
     }
 
     /**
      * @returns {Promise<void>}
      */
     async play() {
-      await new Promise(r => requestAnimationFrame(r));
-      await new Promise(r => requestAnimationFrame(r));
-
       this.startTime = performance.now();
       this._startUiTimer();
       this._renderMoveCounts();
 
-      for (const e of this.data.events) {
-        await this._wait(e.t);
-        this._flushOpponentUntil(e.t);
-        this._handle(e);
-        if (this._destroyed) return;
+      let i = 0; // player events
+      let j = 0; // opponent events
+
+      while (!this._destroyed) {
+        await new Promise(r => requestAnimationFrame(r));
+
+        const elapsed = performance.now() - this.startTime;
+
+        // process player events up to current time
+        while (i < this.data.events.length && this.data.events[i].t <= elapsed) {
+          this._handle(this.data.events[i]);
+          i++;
+        }
+
+        // process opponent events up to current time
+        while (j < this.data.opponent.length && this.data.opponent[j].t <= elapsed) {
+          this._handleOpponent(this.data.opponent[j]);
+          j++;
+        }
+
+        const done =
+          i >= this.data.events.length &&
+          j >= this.data.opponent.length;
+
+        if (done) break;
       }
 
-      this._flushOpponentUntil(Infinity);
+      if (this.mode === 'replay') {
+        this._stopUiTimer();
 
-      this._stopUiTimer();
-
-      if (this.dragEl) {
-        const lastEvent = this.data.events.at(-1);
-        if (lastEvent && 'm' in lastEvent) {
-          const tick = () => {
-            if (this._destroyed) return;
-            this._handle(lastEvent);
-
-            requestAnimationFrame(tick);
-          };
-
-          requestAnimationFrame(tick);
+        if (this.dragEl) {
+          const lastEvent = this.data.events.at(-1);
+          if (lastEvent && 'm' in lastEvent) {
+            const loop = async () => {
+              while (!this._destroyed) {
+                await new Promise(r => requestAnimationFrame(r));
+                this._handle(lastEvent);
+              }
+            };
+            loop();
+          }
         }
       }
     }
