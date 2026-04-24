@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.6
+// @version     1.2.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -1799,7 +1799,7 @@
   <div class="match-head ${svClass}">
     <div class="vs-side ${svClass}"><span class="vs-name ${svClass}">you</span> <span
       class="vs-time ${svClass}">0.99s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
-    <div class="match-clock ${svClass}"><span class="clock-cap ${svClass}">90s</span><!----></div>
+    <!--<div class="match-clock ${svClass}"><span class="clock-cap ${svClass}">90s</span></div>-->
     <div class="vs-side right ${svClass}"><span class="vs-name ${svClass}">sorting </span> <span
       class="vs-time ${svClass}">0.99s</span> <span class="vs-moves ${svClass}">6 moves</span></div>
   </div>
