@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.5
+// @version     1.2.8.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -2412,7 +2412,7 @@
     }
 
     _df = new Intl.DurationFormat(undefined, {
-      style: 'long'
+      style: 'short'
     })
     /**
      * @param {Date} date 
@@ -2424,12 +2424,16 @@
 
       const totalSec = Math.floor(diffMs / 1000);
 
-      // Cache formatter
       const df = this._df;
+
+      // < 20 seconds → now
+      if (totalSec < 20) {
+        return 'now';
+      }
 
       // < 1 minute → seconds
       if (totalSec < 60) {
-        return df.format({ seconds: totalSec });
+        return df.format({ seconds: totalSec }) + ' ago';
       }
 
       // < 1 hour → m + s
@@ -2437,7 +2441,7 @@
         return df.format({
           minutes: Math.floor(totalSec / 60),
           seconds: totalSec % 60
-        });
+        }) + ' ago';
       }
 
       // < 24 hours → h + m
@@ -2445,7 +2449,7 @@
         return df.format({
           hours: Math.floor(totalSec / 3600),
           minutes: Math.floor((totalSec % 3600) / 60)
-        });
+        }) + ' ago';
       }
 
       const d = new Date(date);
