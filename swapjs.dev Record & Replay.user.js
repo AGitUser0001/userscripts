@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.8.6
+// @version     1.2.8.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -2543,6 +2543,7 @@
           await this._add(data);
         }
         this.replays = await this._loadAll();
+        this.selectedId = this.replays[0].id;
         this._renderList();
       };
 
