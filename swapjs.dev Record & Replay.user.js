@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.9.9
+// @version     1.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -2003,9 +2003,9 @@
     .rc-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      padding-top: 8px;
-      max-height: 248px;
+      gap: 8px;
+      padding-top: 10px;
+      max-height: 250px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--muted) transparent;
@@ -2043,22 +2043,15 @@
       transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s;
     }
 
-    /* Slight dim for non-selected */
-    .rc-item:not(.is-selected) {
-      opacity: 0.85;
-    }
-
     .rc-item:hover {
-      background: var(--bg);
+      background: var(--empty);
       transform: translateY(-1px);
-      opacity: 1;
     }
 
     /* Selected */
     .rc-item.is-selected {
       background: var(--dark);
       color: var(--bg);
-      opacity: 1;
     }
 
     /* --- Main row --- */
