@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.2.5
+// @version     1.2.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -581,37 +581,38 @@
       /** @type {HTMLElement | null} */
       this.opponentMovesEl = this.root.querySelector('.match-head .vs-side.right .vs-moves');
 
+      let { opponentName, playerName, opponentNameClass, playerNameClass } = this.data;
       if (mode === 'ghost-player') {
-        this.data.opponentName = this.data.playerName;
-        this.data.opponentNameClass = this.data.playerNameClass;
+        opponentName = playerName;
+        opponentNameClass = playerNameClass;
       }
 
       if (mode.startsWith('ghost-')) {
-        this.data.playerName = 'you';
-        this.data.playerNameClass = null;
+        playerName = 'you';
+        playerNameClass = null;
       }
 
       const playerNameEl = this.root.querySelector('.vs-side:not(.right) .vs-name');
 
       if (playerNameEl) {
-        playerNameEl.textContent = this.data.playerName;
-        if (this.data.playerNameClass)
-          playerNameEl.classList.add(this.data.playerNameClass);
+        playerNameEl.textContent = playerName;
+        if (playerNameClass)
+          playerNameEl.classList.add(playerNameClass);
       }
 
       const oppNameEl = this.root.querySelector('.vs-side.right .vs-name');
 
       if (oppNameEl) {
-        oppNameEl.textContent = this.data.opponentName;
-        if (this.data.opponentNameClass)
-          oppNameEl.classList.add(this.data.opponentNameClass);
+        oppNameEl.textContent = opponentName;
+        if (opponentNameClass)
+          oppNameEl.classList.add(opponentNameClass);
       }
 
       const oppNameEl2 = this.root.querySelector('.opp-label span');
       if (oppNameEl2) {
-        oppNameEl2.textContent = this.data.opponentName;
-        if (this.data.opponentNameClass)
-          oppNameEl2.classList.add(this.data.opponentNameClass);
+        oppNameEl2.textContent = opponentName;
+        if (opponentNameClass)
+          oppNameEl2.classList.add(opponentNameClass);
       }
 
       /** @type {number} */
