@@ -955,7 +955,7 @@
           opponentMs = frozenOppMs;
         else {
           opponentMs = elapsed;
-          if (this._oppIsSorted())
+          if (this._stopOpponentTimer || this._oppIsSorted())
             frozenOppMs = opponentMs;
         }
 
@@ -1013,34 +1013,34 @@
       this._startUiTimer();
       this._renderMoveCounts();
 
-      let i = 0; // player events
-      let j = 0; // opponent events
-
-      while (!this._destroyed) {
-        await new Promise(r => requestAnimationFrame(r));
-
-        const elapsed = performance.now() - this.startTime;
-
-        // process player events up to current time
-        while (i < this.data.events.length && this.data.events[i].t <= elapsed) {
-          this._handle(this.data.events[i]);
-          i++;
-        }
-
-        // process opponent events up to current time
-        while (j < this.data.opponent.length && this.data.opponent[j].t <= elapsed) {
-          this._handleOpponent(this.data.opponent[j]);
-          j++;
-        }
-
-        const done =
-          i >= this.data.events.length &&
-          j >= this.data.opponent.length;
-
-        if (done) break;
-      }
+      let pevent = 0; // player events
+      let oevent = 0; // opponent events
 
       if (this.mode === 'replay') {
+        while (!this._destroyed) {
+          await new Promise(r => requestAnimationFrame(r));
+
+          const elapsed = performance.now() - this.startTime;
+
+          // process player events up to current time
+          while (pevent < this.data.events.length && this.data.events[pevent].t <= elapsed) {
+            this._handle(this.data.events[pevent]);
+            pevent++;
+          }
+
+          // process opponent events up to current time
+          while (oevent < this.data.opponent.length && this.data.opponent[oevent].t <= elapsed) {
+            this._handleOpponent(this.data.opponent[oevent]);
+            oevent++;
+          }
+
+          const done =
+            pevent >= this.data.events.length &&
+            oevent >= this.data.opponent.length;
+
+          if (done) break;
+        }
+
         this._stopUiTimer();
 
         const lastMoveEvent = this.data.events.findLast(e => 'm' in e)
@@ -1053,6 +1053,25 @@
           };
           loop();
         }
+      } else {
+        while (!this._destroyed) {
+          await new Promise(r => requestAnimationFrame(r));
+
+          const elapsed = performance.now() - this.startTime;
+
+          // process opponent events up to current time
+          while (oevent < this.data.opponent.length && this.data.opponent[oevent].t <= elapsed) {
+            this._handleOpponent(this.data.opponent[oevent]);
+            oevent++;
+          }
+
+          const done =
+            oevent >= this.data.opponent.length;
+
+          if (done) break;
+        }
+
+        this._stopOpponentTimer = true;
       }
     }
 
@@ -1074,8 +1093,6 @@
      * @returns {void}
      */
     _handle(e) {
-      if (this.mode !== 'replay') return;
-
       this.cursor.hideCursor = e.c === 0;
       if ('m' in e) {
         this.cursor.pointerMove(this._arenaToClient(e.m));
