@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.4
+// @version     1.4.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -1370,7 +1370,16 @@
       let k = keyword;
 
       if (k === "auto") {
-        k = this._isTextCursorAtPoint(this.x, this.y) ? "text" : "default";
+        k = 'default';
+        if (this._isTextCursorAtPoint(this.x, this.y)) {
+          const writingMode = getComputedStyle(el).writingMode;
+          const verticalModes = [
+            'vertical-rl', 'vertical-lr',
+            'sideways-rl', 'sideways-lr',
+            'tb', 'tb-rl', 'tb-lr'
+          ];
+          k = verticalModes.includes(writingMode) ? 'vertical-text' : 'text';
+        }
       }
 
       return { type: "keyword", keyword: k };
