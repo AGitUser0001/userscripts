@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.6.1
+// @version     1.3.7
 // @author      auser0001
 // ==/UserScript==
 
