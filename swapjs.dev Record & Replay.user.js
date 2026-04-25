@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.8
+// @version     1.3.9
 // @author      auser0001
 // ==/UserScript==
 
@@ -366,10 +366,9 @@
       this._opponentHeightTable = buildHeightValueTable(this.data.startOrder);
 
       const inferredOpponent = readOpponentValuesFromHeights(oppBars, this._opponentHeightTable);
-      this.data.opponentStartOrder =
-        inferredOpponent.length === this.data.startOrder.length
-          ? inferredOpponent
-          : this.data.startOrder.slice();
+      if (inferredOpponent.length !== this.data.startOrder.length)
+        throw new Error('Invalid opponent data!');
+      this.data.opponentStartOrder = inferredOpponent;
 
       window.addEventListener('pointermove', this._onMove, true);
       window.addEventListener('pointerdown', this._onDown, true);
@@ -656,11 +655,18 @@
       /** @type {number} */
       this._lastOpponentMoveCount = 0;
 
+      /** @type {RecordedEvent[]} */
+      this._events = data.events.slice().sort((a, b) => a.t - b.t);
+
       /** @type {OpponentEvent[]} */
-      this._opponentEvents = (data.opponent || []).slice().sort((a, b) => a.t - b.t);
+      this._opponentEvents = data.opponent.slice().sort((a, b) => a.t - b.t);
+
+      this._startOrder = this.data.startOrder.slice();
+      this._opponentStartOrder = this.data.opponentStartOrder.slice();
 
       if (mode === 'ghost-player') {
         this._opponentEvents = this._convertPlayerToOpponent();
+        this._opponentStartOrder = this._startOrder.slice();
       }
 
       this._onResize = this._onResize.bind(this);
@@ -780,11 +786,8 @@
       this.dragLeft = 0;
     }
 
-    /**
-     * @returns {void}
-     */
     _initBarsFromStartOrder() {
-      const values = this.data.startOrder.slice();
+      const values = this._startOrder;
       const max = Math.max(...values);
 
       if (values.length !== this.bars.length) {
@@ -803,16 +806,12 @@
       });
     }
 
-    /**
-     * @returns {void}
-     */
     _initOpponentFromStartOrder() {
-      const values =
-        this.data.opponentStartOrder.length === this.oppBars.length
-          ? this.data.opponentStartOrder.slice()
-          : this.data.startOrder.slice();
+      const values = this._opponentStartOrder;
 
-      if (!values.length || !this.oppBars.length) return;
+      if (values.length !== this.oppBars.length) {
+        throw new Error(`opponentStartOrder length ${values.length} !== opponent bar count ${this.oppBars.length}`);
+      }
 
       const max = Math.max(...values);
 
@@ -1023,27 +1022,27 @@
           const elapsed = performance.now() - this.startTime;
 
           // process player events up to current time
-          while (pevent < this.data.events.length && this.data.events[pevent].t <= elapsed) {
-            this._handle(this.data.events[pevent]);
+          while (pevent < this._events.length && this._events[pevent].t <= elapsed) {
+            this._handle(this._events[pevent]);
             pevent++;
           }
 
           // process opponent events up to current time
-          while (oevent < this.data.opponent.length && this.data.opponent[oevent].t <= elapsed) {
-            this._handleOpponent(this.data.opponent[oevent]);
+          while (oevent < this._opponentEvents.length && this._opponentEvents[oevent].t <= elapsed) {
+            this._handleOpponent(this._opponentEvents[oevent]);
             oevent++;
           }
 
           const done =
-            pevent >= this.data.events.length &&
-            oevent >= this.data.opponent.length;
+            pevent >= this._events.length &&
+            oevent >= this._opponentEvents.length;
 
           if (done) break;
         }
 
         this._stopUiTimer();
 
-        const lastMoveEvent = this.data.events.findLast(e => 'm' in e)
+        const lastMoveEvent = this._events.findLast(e => 'm' in e)
         if (lastMoveEvent) {
           const loop = async () => {
             while (!this._destroyed) {
@@ -1060,13 +1059,12 @@
           const elapsed = performance.now() - this.startTime;
 
           // process opponent events up to current time
-          while (oevent < this.data.opponent.length && this.data.opponent[oevent].t <= elapsed) {
-            this._handleOpponent(this.data.opponent[oevent]);
+          while (oevent < this._opponentEvents.length && this._opponentEvents[oevent].t <= elapsed) {
+            this._handleOpponent(this._opponentEvents[oevent]);
             oevent++;
           }
 
-          const done =
-            oevent >= this.data.opponent.length;
+          const done = oevent >= this._opponentEvents.length;
 
           if (done) break;
         }
@@ -1212,13 +1210,13 @@
     }
 
     _convertPlayerToOpponent() {
-      let bars = this.data.startOrder.map((v, i) => ({ v, id: i }));
+      let bars = this._startOrder.map((v, i) => ({ v, id: i }));
 
       const result = [];
 
       let lastDown = -1;
 
-      for (const e of this.data.events) {
+      for (const e of this._events) {
         if ('d' in e) {
           lastDown = e.d;
         }
