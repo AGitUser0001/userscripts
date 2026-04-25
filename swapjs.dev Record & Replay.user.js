@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.3
+// @version     1.3.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -2300,7 +2300,7 @@
     _createUI() {
       const el = document.createElement('div');
 
-      el.className = 'rc-root';
+      el.className = 'rc-root is-collapsed';
       el.innerHTML = `
         <div class="rc-header">
           <span class="rc-title">Replays</span>
