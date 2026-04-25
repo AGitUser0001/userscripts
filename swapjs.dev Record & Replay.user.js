@@ -4,16 +4,16 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.5
+// @version     1.3.6
 // @author      auser0001
 // ==/UserScript==
 
 (async function () {
   'use strict';
   /**
-   * @typedef {{ t: number, m: [x: number, y: number] }} RecordedMoveEvent
-   * @typedef {{ t: number, d: number }} RecordedDownEvent
-   * @typedef {{ t: number, u: number }} RecordedUpEvent
+   * @typedef {{ t: number, m: [x: number, y: number], c: 1 | 0 }} RecordedMoveEvent
+   * @typedef {{ t: number, d: number, c: 1 | 0 }} RecordedDownEvent
+   * @typedef {{ t: number, u: number, c: 1 | 0 }} RecordedUpEvent
    * @typedef {RecordedMoveEvent | RecordedDownEvent | RecordedUpEvent} RecordedEvent
    *
    * @typedef {{ t: number, o: number[] }} OpponentEvent
@@ -427,7 +427,8 @@
 
       this.data.events.push({
         t: this._time(),
-        m: this._getPos(e)
+        m: this._getPos(e),
+        c: e.pointerType === 'mouse' ? 1 : 0
       });
     }
 
@@ -447,7 +448,8 @@
 
       this.data.events.push({
         t: this._time(),
-        d: this._dragStartIndex
+        d: this._dragStartIndex,
+        c: e.pointerType === 'mouse' ? 1 : 0
       });
     }
 
@@ -465,7 +467,10 @@
 
       await this._waitForDragEnd();
 
-      this.data.events.push({ t, u });
+      this.data.events.push({
+        t, u,
+        c: e.pointerType === 'mouse' ? 1 : 0
+      });
 
       this.activeBar = null;
       this._dragStartIndex = -1;
@@ -1071,6 +1076,7 @@
     _handle(e) {
       if (this.mode !== 'replay') return;
 
+      this.cursor.hideCursor = !!e.c;
       if ('m' in e) {
         this.cursor.pointerMove(this._arenaToClient(e.m));
       }
