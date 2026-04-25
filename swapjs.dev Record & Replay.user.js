@@ -2315,8 +2315,8 @@
     async _detectResult() {
       while (true) {
         await new Promise(r => requestAnimationFrame(r));
-
-        const rt = document.querySelector('.result-wrap .result-title');
+  
+        const rt = document.querySelector('.result-wrap .result-title, .result-wrap .big-text');
         if (!rt) continue;
 
         const t = rt.textContent.toLowerCase();
