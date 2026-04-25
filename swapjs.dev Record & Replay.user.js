@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.6
+// @version     1.3.6.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -1076,7 +1076,7 @@
     _handle(e) {
       if (this.mode !== 'replay') return;
 
-      this.cursor.hideCursor = !!e.c;
+      this.cursor.hideCursor = e.c === 0;
       if ('m' in e) {
         this.cursor.pointerMove(this._arenaToClient(e.m));
       }
