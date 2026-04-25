@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.7
+// @version     1.3.8
 // @author      auser0001
 // ==/UserScript==
 
@@ -2020,6 +2020,16 @@
       color: #e08668;
       border-color: rgba(224, 134, 104, 0.3);
       background: #e086681a;
+    }
+
+    .rc-root:has(.rc-item.is-selected .rc-result.is-loss) .rc-actions button[data-act="ghost-player"],
+    .rc-root:has(.rc-item.is-selected .rc-result.is-win) .rc-actions button[data-act="ghost-opponent"] {
+      background: #b8432e15;
+    }
+
+    .rc-root:has(.rc-item.is-selected .rc-result.is-win) .rc-actions button[data-act="ghost-player"],
+    .rc-root:has(.rc-item.is-selected .rc-result.is-loss) .rc-actions button[data-act="ghost-opponent"] {
+      background: #2e8b5715;
     }
 
     /* --- List --- */
