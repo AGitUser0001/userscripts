@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.9
+// @version     1.3.10
 // @author      auser0001
 // ==/UserScript==
 
@@ -1015,31 +1015,32 @@
       let pevent = 0; // player events
       let oevent = 0; // opponent events
 
-      if (this.mode === 'replay') {
-        while (!this._destroyed) {
-          await new Promise(r => requestAnimationFrame(r));
+      while (!this._destroyed) {
+        await new Promise(r => requestAnimationFrame(r));
 
-          const elapsed = performance.now() - this.startTime;
+        const elapsed = performance.now() - this.startTime;
 
-          // process player events up to current time
-          while (pevent < this._events.length && this._events[pevent].t <= elapsed) {
+        // process player events up to current time
+        while (pevent < this._events.length && this._events[pevent].t <= elapsed) {
+          if (this.mode === 'replay')
             this._handle(this._events[pevent]);
-            pevent++;
-          }
-
-          // process opponent events up to current time
-          while (oevent < this._opponentEvents.length && this._opponentEvents[oevent].t <= elapsed) {
-            this._handleOpponent(this._opponentEvents[oevent]);
-            oevent++;
-          }
-
-          const done =
-            pevent >= this._events.length &&
-            oevent >= this._opponentEvents.length;
-
-          if (done) break;
+          pevent++;
         }
 
+        // process opponent events up to current time
+        while (oevent < this._opponentEvents.length && this._opponentEvents[oevent].t <= elapsed) {
+          this._handleOpponent(this._opponentEvents[oevent]);
+          oevent++;
+        }
+
+        const done =
+          pevent >= this._events.length &&
+          oevent >= this._opponentEvents.length;
+
+        if (done) break;
+      }
+
+      if (this.mode === 'replay') {
         this._stopUiTimer();
 
         const lastMoveEvent = this._events.findLast(e => 'm' in e)
@@ -1053,22 +1054,6 @@
           loop();
         }
       } else {
-        while (!this._destroyed) {
-          await new Promise(r => requestAnimationFrame(r));
-
-          const elapsed = performance.now() - this.startTime;
-
-          // process opponent events up to current time
-          while (oevent < this._opponentEvents.length && this._opponentEvents[oevent].t <= elapsed) {
-            this._handleOpponent(this._opponentEvents[oevent]);
-            oevent++;
-          }
-
-          const done = oevent >= this._opponentEvents.length;
-
-          if (done) break;
-        }
-
         this._stopOpponentTimer = true;
       }
     }
@@ -2315,7 +2300,7 @@
     async _detectResult() {
       while (true) {
         await new Promise(r => requestAnimationFrame(r));
-  
+
         const rt = document.querySelector('.result-wrap .result-title, .result-wrap .big-text');
         if (!rt) continue;
 
