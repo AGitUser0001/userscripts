@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.3.4
+// @version     1.3.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -2273,6 +2273,7 @@
 
         await this._add(entry);
         this.replays = await this._loadAll();
+        this.selectedId = this.replays[0].id;
         this._renderList();
       }
     }
@@ -2532,16 +2533,23 @@
       input.onchange = async () => {
         const files = assert(input.files);
         if (!files.length) return;
+        let id = null, ts = 0;
         for (const file of files) {
           const text = await file.text();
+          /** @type {ReplayEntry} */
           const data = JSON.parse(text);
 
           if (!('id' in data)) continue;
 
           await this._add(data);
+          if (data.ts > ts) {
+            ts = data.ts;
+            id = data.id;
+          }
         }
         this.replays = await this._loadAll();
-        this.selectedId = this.replays[0].id;
+        if (id)
+          this.selectedId = id;
         this._renderList();
       };
 
