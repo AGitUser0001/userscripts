@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Hotspot Tester</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #f9fafb;
+      color: #1f2937;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .cursor-box {
+      background: white;
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      user-select: none;
+    }
+
+    .cursor-box:hover {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      border-style: solid;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* The preview container relative to standard cursor size */
+    .visual-preview {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      margin-bottom: 1rem;
+      pointer-events: none; /* Prevents interference with the box's applied cursor */
+      background: #f3f4f6; /* Slight background to see the bounds */
+      border-radius: 4px;
+    }
+
+    .visual-preview img {
+      display: block;
+    }
+
+    /* The exact hotspot coordinate marker */
+    .hotspot-dot {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background-color: red;
+      border-radius: 50%;
+      /* Translate -50% ensures the center of the dot sits on the exact X/Y, not its top-left corner */
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      box-shadow: 0 0 0 1px white; /* Tiny white outline so it pops on black paths */
+    }
+
+    .cursor-name {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      pointer-events: none;
+    }
+
+    .cursor-meta {
+      font-size: 0.75rem;
+      color: #6b7280;
+      font-family: monospace;
+      pointer-events: none;
+    }
+    
+    .error-msg {
+      color: #ef4444;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Custom Cursor Tester</h1>
+  <div class="subtitle">Hover over the boxes to test. Red dots indicate the exact click hotspot.</div>
+  
+  <div id="cursor-grid" class="grid"></div>
+
+  <script src='test-cursors.js'></script>
+
+</body>
+</html>
