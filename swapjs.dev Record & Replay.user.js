@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.2
+// @version     1.6.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -2295,6 +2295,8 @@
     }
 
     .rc-search {
+      width: 100%;
+      margin-top: 10px;
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
