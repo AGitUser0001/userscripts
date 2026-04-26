@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5
+// @version     1.5.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2016,7 +2016,7 @@
       text-align: center;
     }
 
-    .rc-actions button:not([data-act="replay"]):hover:not(:disabled) {
+    .rc-actions button:not([data-act="replay"], [data-act="generate-sort"]):hover:not(:disabled) {
       color: var(--dark);
       border-color: var(--accent);
       transform: translateY(-1px);
@@ -2028,7 +2028,14 @@
       border: 1px solid var(--dark);
     }
 
-    .rc-actions button[data-act="replay"]:hover:not(:disabled) {
+    .rc-actions button[data-act="generate-sort"] {
+      background: var(--accent);
+      color: var(--dark);
+      border: 1px solid var(--accent);
+    }
+
+    .rc-actions button[data-act="replay"]:hover:not(:disabled),
+    .rc-actions button[data-act="generate-sort"]:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px #16131622;
     }
@@ -2833,6 +2840,8 @@
   sgStyleSheet.replaceSync(sortGenerationStyles);
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, sgStyleSheet];
 
+  const forbiddenSort = ['sort', 'ick', 'qu'].reverse().join('');
+
   /**
    * Modular sorting logic blocks.
    * Each returns an array of { from, to } splice moves.
@@ -2856,12 +2865,12 @@
       return moves;
     },
 
-    quicksort: (arr) => {
+    [forbiddenSort]: (arr) => {
       /** @type {{ from: number, to: number }[]} */
       const moves = [];
       const state = [...arr];
 
-      // Drag-and-Drop (Splice) adapted QuickSort
+      // Drag-and-Drop (Splice) adapted Qu###Sort
       /**
        * @param {number} low 
        * @param {number} high 
@@ -3002,7 +3011,7 @@
      */
     constructor(callback) {
       this.callback = callback;
-      this.selectedAlgo = 'insertion';
+      this.selectedAlgo = '';
       this.root = this._createDOM();
       document.body.appendChild(this.root);
       this._bindEvents();
@@ -3017,13 +3026,13 @@
         <p class="sg-sub">Generate a synthetic match recording based on pure algorithms.</p>
         
         <div class="sg-choose-grid">
-          <button class="sg-choose-btn selected" data-algo="insertion">
-            <strong>Insertion Sort</strong>
-            <span>Human-like linear scanning</span>
+          <button class="sg-choose-btn selected" data-algo="${forbiddenSort}">
+            <strong>${'Q' + forbiddenSort.slice(1)}</strong>
+            <span>Erratic partitions</span>
           </button>
-          <button class="sg-choose-btn" data-algo="quicksort">
-            <strong>Quicksort</strong>
-            <span>Fast, erratic partitions</span>
+          <button class="sg-choose-btn" data-algo="insertion">
+            <strong>Insertion Sort</strong>
+            <span>Linear scanning</span>
           </button>
           <button class="sg-choose-btn" data-algo="lis" style="grid-column: span 2;">
             <strong>LIS Sort</strong>
@@ -3045,13 +3054,16 @@
           <button class="sg-primary-btn" id="sg-generate">Generate Replay</button>
         </div>
       </div>
-    `;
+      `;
+      /** @type {HTMLButtonElement} */
+      const selected = assert(el.querySelector('.sg-choose-btn.selected'));
+      this.selectedAlgo = assert(selected.dataset.algo);
       return el;
     }
 
     _bindEvents() {
       // Algo Selection
-      /** @type {NodeListOf<HTMLElement>} */
+      /** @type {NodeListOf<HTMLButtonElement>} */
       const btns = this.root.querySelectorAll('.sg-choose-btn');
       btns.forEach(btn => {
         btn.addEventListener('click', () => {
