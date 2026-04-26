@@ -52,7 +52,7 @@ const cursorConfig = [
   { id: 'crosshair', filename: 'assets/thin/plus-thin.svg', hotspot: 'center' },
   { id: 'text', filename: 'raw/light/cursor-text-light.svg', hotspot: 'center' },
   { id: 'vertical-text', filename: 'raw/light/cursor-text-light.svg', hotspot: 'center', rotate: 90 },
-  { id: 'alias', filename: '<cursor>', hotspot: 'top-left', overlay: 'raw/bold/arrow-u-up-right-bold.svg', overlayMultitone: true },
+  { id: 'alias', filename: '<cursor>', hotspot: 'top-left', overlay: 'raw/duotone/arrow-square-out-duotone.svg', overlayMultitone: true },
   { id: "copy", filename: "<cursor>", hotspot: "top-left", overlay: "raw/duotone/copy-duotone.svg", overlayMultitone: true },
   { id: 'move', filename: 'assets/regular/arrows-out-cardinal.svg', hotspot: 'center' },
   { id: 'no-drop', filename: 'assets/regular/prohibit-inset.svg', hotspot: 'center' },
