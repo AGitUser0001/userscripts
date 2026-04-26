@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.10.2
+// @version     1.5.10.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -1113,10 +1113,12 @@
     async play() {
       this.countdownEl.style.display = '';
       this.matchEl.style.display = 'none';
-      this.countdownEl.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      setTimeout(() => {
+        this.countdownEl.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 60);
       let countdown = 3;
       while (countdown > 0 && !this._destroyed) {
         this.countdownTextEl.textContent = `${countdown}`;
@@ -1126,10 +1128,12 @@
       this.countdownEl.style.display = 'none';
       this.matchEl.style.display = '';
       this._layout();
-      this.matchEl.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      setTimeout(() => {
+        this.matchEl.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 60);
 
       this.startTime = performance.now();
       this._startUiTimer();
