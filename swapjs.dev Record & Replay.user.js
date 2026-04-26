@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.8
+// @version     1.5.9
 // @author      auser0001
 // ==/UserScript==
 
@@ -2711,6 +2711,8 @@
     _play(mode) {
       const r = this._getSelected();
       if (!r) return;
+
+      this.root.classList.toggle('is-collapsed');
 
       if (this._replay) {
         this._replay.destroy();
