@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.10.1
+// @version     1.5.10.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -2670,7 +2670,7 @@
     _formatDuration(ms) {
       const s = Math.floor(ms / 1000);
       const fractional = Math.floor(ms % 1000);
-      
+
       // < 1 minute → seconds
       if (s < 60) {
         return this._dfn.format({
@@ -2703,7 +2703,12 @@
 
     _dfn = new Intl.DurationFormat(undefined, {
       style: 'narrow',
-      milliseconds: 'numeric'
+      milliseconds: 'numeric',
+      secondsDisplay: 'always'
+    });
+
+    _tf = new Intl.DurationFormat(undefined, {
+      style: 'narrow'
     });
 
     /**
@@ -2716,7 +2721,7 @@
 
       const totalSec = Math.floor(diffMs / 1000);
 
-      const df = this._dfn;
+      const df = this._tf;
 
       // < 20 seconds → now
       if (totalSec < 20) {
