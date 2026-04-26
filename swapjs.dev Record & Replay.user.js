@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.4.1
+// @version     1.4.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -672,7 +672,6 @@
       this._onResize = this._onResize.bind(this);
 
       this._resetInjectedState();
-      this._applyResponsiveRootSizing();
       this._initBarsFromStartOrder();
       this._initOpponentFromStartOrder();
       this._layout();
@@ -689,6 +688,20 @@
       this._destroyed = false;
     }
 
+    _originalTabBody = assert(
+      document.querySelector('.page .tab-body')
+    );
+
+    _originalTabs = assert(
+      document.querySelector('.page .tabs')
+    );
+
+    _tabs =
+      /** @type {typeof this._originalTabs} */
+      (this._originalTabs.cloneNode(true));
+
+    _navigateListener = () => this.destroy();
+
     /**
      * @param {string} html
      * @returns {HTMLElement}
@@ -702,37 +715,30 @@
         throw new Error('Replay HTML did not produce a root element');
       }
 
-      Object.assign(root.style, {
-        position: 'fixed',
-        inset: '0',
-        zIndex: '999999',
-        width: '100vw',
-        height: '100vh',
-        borderRadius: '0',
-        boxSizing: 'border-box'
-      });
+      /** @type {NodeListOf<HTMLButtonElement>} */
+      const allTabs = this._tabs.querySelectorAll('.tab');
+      for (const tab of allTabs) {
+        if (tab.classList.contains('active')) {
+          const newTab = /** @type {typeof tab} */ (tab.cloneNode(true));
+          newTab.textContent = {
+            'replay': 'replay',
+            'ghost-player': 'ghost: player',
+            'ghost-opponent': 'ghost: opponent'
+          }[this.mode];
+          this._tabs.appendChild(newTab);
 
-      const close = document.createElement('span');
-      close.textContent = '✕';
-      close.style.cursor = 'pointer';
-      close.style.position = 'absolute';
-      close.style.top = '10px';
-      close.style.right = '10px';
+          tab.classList.remove('active');
+          tab.addEventListener('click', this._navigateListener);
+        } else {
+          tab.classList.add('tab-disabled');
+          tab.disabled = true;
+        }
+      }
+      this._originalTabs.replaceWith(this._tabs);
 
-      close.onclick = () => this.destroy();
-
-      root.appendChild(close);
-
-      document.body.appendChild(root);
+      this._originalTabBody.replaceWith(root);
+      navigation.addEventListener('navigate', this._navigateListener);
       return root;
-    }
-
-    /**
-     * @returns {void}
-     */
-    _applyResponsiveRootSizing() {
-      this.root.style.width = `${window.innerWidth}px`;
-      this.root.style.height = `${window.innerHeight}px`;
     }
 
     /**
@@ -742,7 +748,6 @@
       if (this._resizeRaf != null) return;
       this._resizeRaf = requestAnimationFrame(() => {
         this._resizeRaf = null;
-        this._applyResponsiveRootSizing();
         this._layout();
       });
     }
@@ -752,7 +757,9 @@
      */
 
     destroy() {
+      if (this._destroyed) return;
       this._destroyed = true;
+      navigation.removeEventListener('navigate', this._navigateListener);
 
       this._stopUiTimer();
 
@@ -767,7 +774,8 @@
         this._resizeRaf = null;
       }
 
-      this.root.remove();
+      this.root.replaceWith(this._originalTabBody);
+      this._tabs.replaceWith(this._originalTabs);
     }
 
     /**
@@ -1810,66 +1818,74 @@
   //#endregion
 
   const svClass = await readMatchSvelteClass();
-  const snapshotHTML = `<div class="match-wrap ${svClass}">
-  <div class="match-head ${svClass}">
-    <div class="vs-side ${svClass}"><span class="vs-name ${svClass}">you</span> <span
-      class="vs-time ${svClass}">0.99s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
-    <!--<div class="match-clock ${svClass}"><span class="clock-cap ${svClass}">90s</span></div>-->
-    <div class="vs-side right ${svClass}"><span class="vs-name ${svClass}">sorting </span> <span
-      class="vs-time ${svClass}">0.99s</span> <span class="vs-moves ${svClass}">6 moves</span></div>
-  </div>
-  <div class="arena ${svClass}">
-    <div role="button" tabindex="0" class="bar ${svClass}" style="left: 0px; width: 57.0833px; height: 29.3684%;">
-      <span class="bar-val ${svClass}">31</span></div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 65.0833px; width: 57.0833px; height: 50.2105%;"><span class="bar-val ${svClass}">53</span>
+
+  const snapshotHTML = `
+  <section class="tab-body ${svClass}">
+    <div class="match-wrap ${svClass}">
+      <div class="match-head ${svClass}">
+        <div class="vs-side ${svClass}"><span class="vs-name ${svClass}">you</span> <span
+                class="vs-time ${svClass}">0.00s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
+        <!--<div class="match-clock ${svClass}"><span class="clock-cap ${svClass}">90s</span></div>-->
+        <div class="vs-side right ${svClass}"><span class="vs-name ${svClass}">opponent </span> <span
+                class="vs-time ${svClass}">0.00s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
+      </div>
+      <div class="arena ${svClass}">
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+        <div role="button" tabindex="0" class="bar ${svClass}">
+          <span class="bar-val ${svClass}"></span>
+        </div>
+      </div>
+      <div class="opp-arena ${svClass}">
+        <div class="opp-label ${svClass}"><span class="${svClass}">opponent</span>'s board</div>
+        <div class="opp-bars ${svClass}">
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+          <div class="opp-bar ${svClass}"></div>
+        </div>
+      </div>
     </div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 130.167px; width: 57.0833px; height: 68.2105%;"><span class="bar-val ${svClass}">72</span>
-    </div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 195.25px; width: 57.0833px; height: 58.7368%;"><span class="bar-val ${svClass}">62</span></div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 260.333px; width: 57.0833px; height: 25.5789%;"><span class="bar-val ${svClass}">27</span>
-    </div>
-    <div role="button" tabindex="0" class="bar ${svClass} dragging"
-      style="left: 325.414px; width: 57.0833px; height: 28.4211%;"><span class="bar-val ${svClass}">30</span>
-    </div>
-    <div role="button" tabindex="0" class="bar ${svClass}" style="left: 390.5px; width: 57.0833px; height: 90%;">
-      <span class="bar-val ${svClass}">95</span></div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 455.583px; width: 57.0833px; height: 82.4211%;"><span class="bar-val ${svClass}">87</span>
-    </div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 520.667px; width: 57.0833px; height: 47.3684%;"><span class="bar-val ${svClass}">50</span>
-    </div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 585.75px; width: 57.0833px; height: 89.0526%;"><span class="bar-val ${svClass}">94</span></div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 650.833px; width: 57.0833px; height: 69.1579%;"><span class="bar-val ${svClass}">73</span>
-    </div>
-    <div role="button" tabindex="0" class="bar ${svClass}"
-      style="left: 715.917px; width: 57.0833px; height: 43.5789%;"><span class="bar-val ${svClass}">46</span>
-    </div>
-  </div>
-  <div class="opp-arena ${svClass}">
-    <div class="opp-label ${svClass}"><span class="${svClass}">sorting</span>'s board</div>
-    <div class="opp-bars ${svClass}">
-      <div class="opp-bar ${svClass}" style="height: 28.4211%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 31.5789%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 32.6316%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 48.4211%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 52.6316%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 55.7895%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 65.2632%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 75.7895%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 76.8421%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 100%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 91.5789%;"></div>
-      <div class="opp-bar ${svClass}" style="height: 98.9474%;"></div>
-    </div>
-  </div>
-</div>`;
+  </section>`;
 
   /**
    * @template T
@@ -1909,6 +1925,13 @@
 
   const replaySS = new CSSStyleSheet();
   replaySS.replaceSync(`
+    .rc-root {
+      display: none;
+    }
+    .group-active .rc-root {
+      display: flex;
+    }
+
     /* --- Root --- */
     .rc-root {
       position: fixed;
