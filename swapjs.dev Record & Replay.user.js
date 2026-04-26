@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.4.2
+// @version     1.4.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -646,8 +646,10 @@
       /** @type {number | null} */
       this._timerRaf = null;
 
+      this._update = this._update.bind(this);
+
       /** @type {number | null} */
-      this._resizeRaf = null;
+      this._updateRaf = requestAnimationFrame(this._update);
 
       /** @type {number} */
       this._lastPlayerMoveCount = 0;
@@ -772,6 +774,11 @@
       if (this._resizeRaf != null) {
         cancelAnimationFrame(this._resizeRaf);
         this._resizeRaf = null;
+      }
+
+      if (this._updateRaf != null) {
+        cancelAnimationFrame(this._updateRaf);
+        this._updateRaf = null;
       }
 
       this.root.replaceWith(this._originalTabBody);
@@ -1050,17 +1057,6 @@
 
       if (this.mode === 'replay') {
         this._stopUiTimer();
-
-        const lastMoveEvent = this._events.findLast(e => 'm' in e)
-        if (lastMoveEvent) {
-          const loop = async () => {
-            while (!this._destroyed) {
-              await new Promise(r => requestAnimationFrame(r));
-              this._handle(lastMoveEvent);
-            }
-          };
-          loop();
-        }
       } else {
         this._stopOpponentTimer = true;
       }
@@ -1079,6 +1075,8 @@
       }
     }
 
+    _cursorPos = { x: -500, y: -500 };
+
     /**
      * @param {RecordedEvent} e
      * @returns {void}
@@ -1086,7 +1084,7 @@
     _handle(e) {
       this.cursor.hideCursor = e.c === 0;
       if ('m' in e) {
-        this.cursor.pointerMove(this._arenaToClient(e.m));
+        this._cursorPos = this._arenaToClient(e.m);
       }
 
       if ('d' in e) {
@@ -1100,6 +1098,11 @@
         this.cursor.pointerMove(pos);
         this.cursor.pointerUp();
       }
+    }
+
+    _update() {
+      this.cursor.pointerMove(this._cursorPos);
+      this._updateRaf = requestAnimationFrame(this._update);
     }
 
     /**
@@ -2555,6 +2558,9 @@
       return this.replays.find(r => r.id === this.selectedId);
     }
 
+    /** @type {SwapReplay | null} */
+    _replay = null;
+
     /**
      * @param {GhostMode} mode
      */
@@ -2562,7 +2568,14 @@
       const r = this._getSelected();
       if (!r) return;
 
+      if (this._replay) {
+        this._replay.destroy();
+        this._replay = null;
+      }
+  
       const replay = new SwapReplay(r.data, snapshotHTML, this._cursor, mode);
+      this._replay = replay;
+
       replay.play().then(async () => {
         await this._waitFor(() => replay._destroyed);
         this._cursor.pointerMove({ x: -500, y: -500 });
