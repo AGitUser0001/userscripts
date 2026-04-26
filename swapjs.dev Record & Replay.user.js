@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.4.3
+// @version     1.4.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -1075,7 +1075,8 @@
       }
     }
 
-    _cursorPos = { x: -500, y: -500 };
+    /** @type {[x: number, y: number] | null} */
+    _cursorPos = null;
 
     /**
      * @param {RecordedEvent} e
@@ -1084,7 +1085,7 @@
     _handle(e) {
       this.cursor.hideCursor = e.c === 0;
       if ('m' in e) {
-        this._cursorPos = this._arenaToClient(e.m);
+        this._cursorPos = e.m;
       }
 
       if ('d' in e) {
@@ -1101,7 +1102,11 @@
     }
 
     _update() {
-      this.cursor.pointerMove(this._cursorPos);
+      this.cursor.pointerMove(
+        this._cursorPos == null ?
+          { x: -500, y: -500 } :
+        this._arenaToClient(this._cursorPos)
+      );
       this._updateRaf = requestAnimationFrame(this._update);
     }
 
