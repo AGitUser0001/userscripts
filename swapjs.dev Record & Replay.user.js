@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.7.3
+// @version     1.5.7.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -1025,55 +1025,51 @@
       });
     }
 
+    /** @type {number | null} */
+    _frozenPlayerMs = null;
+    /** @type {number | null} */
+    _frozenOppMs = null;
+
     /**
      * @returns {void}
      */
     _startUiTimer() {
-      /** @type {number | null} */
-      let frozenPlayerMs = null;
-      /** @type {number | null} */
-      let frozenOppMs = null;
+      const elapsed = performance.now() - this.startTime;
 
-      const tick = () => {
-        const elapsed = performance.now() - this.startTime;
-
-        let playerMs;
-        if (frozenPlayerMs != null)
-          playerMs = frozenPlayerMs;
-        else {
-          playerMs = elapsed;
-          if (this.mode === 'replay') {
-            if (elapsed > this.data.matchLength)
-              frozenPlayerMs = elapsed;
-          } else if (this.mode.startsWith('ghost-')) {
-            if (this._isSorted()) {
-              frozenPlayerMs = playerMs;
-              this._onFinish();
-            }
+      let playerMs;
+      if (this._frozenPlayerMs != null)
+        playerMs = this._frozenPlayerMs;
+      else {
+        playerMs = elapsed;
+        if (this.mode === 'replay') {
+          if (elapsed > this.data.matchLength)
+            this._frozenPlayerMs = elapsed;
+        } else if (this.mode.startsWith('ghost-')) {
+          if (this._isSorted()) {
+            this._frozenPlayerMs = playerMs;
+            this._onFinish();
           }
         }
+      }
 
-        let opponentMs;
-        if (frozenOppMs != null)
-          opponentMs = frozenOppMs;
-        else {
-          opponentMs = elapsed;
-          if (elapsed > this.data.matchLength)
-            frozenOppMs = opponentMs;
-        }
+      let opponentMs;
+      if (this._frozenOppMs != null)
+        opponentMs = this._frozenOppMs;
+      else {
+        opponentMs = elapsed;
+        if (elapsed > this.data.matchLength)
+          this._frozenOppMs = opponentMs;
+      }
 
-        if (this.playerTimeEl) {
-          this.playerTimeEl.textContent = `${(playerMs / 1000).toFixed(2)}s`;
-        }
+      if (this.playerTimeEl) {
+        this.playerTimeEl.textContent = `${(playerMs / 1000).toFixed(2)}s`;
+      }
 
-        if (this.opponentTimeEl) {
-          this.opponentTimeEl.textContent = `${(opponentMs / 1000).toFixed(2)}s`;
-        }
+      if (this.opponentTimeEl) {
+        this.opponentTimeEl.textContent = `${(opponentMs / 1000).toFixed(2)}s`;
+      }
 
-        this._timerRaf = requestAnimationFrame(tick);
-      };
-
-      this._timerRaf = requestAnimationFrame(tick);
+      this._timerRaf = requestAnimationFrame(() => this._startUiTimer());
     }
 
     /**
