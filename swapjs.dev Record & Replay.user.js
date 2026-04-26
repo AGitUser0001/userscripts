@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.1
+// @version     1.6.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -2295,17 +2295,18 @@
     }
 
     .rc-search {
-      padding: 6px;
-      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 13px;
+      color: var(--dark);
     }
 
-    .rc-search input {
-      width: 100%;
-      background: var(--bg-2);
-      border: none;
-      color: var(--text);
-      padding: 4px 6px;
-      font-size: 12px;
+    .rc-search:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: transparent;
     }
 
     /* --- Mobile --- */
@@ -2563,9 +2564,7 @@
               <button data-act="ghost-opponent">ghost: opponent</button>
             </div>
           </div>
-          <div class="rc-search">
-            <input type="text" placeholder="Search..." />
-          </div>
+          <input type="text" placeholder="Search..." class="rc-search" />
           <div class="rc-list"></div>
         </div>
       `;
@@ -2576,7 +2575,7 @@
       });
 
       /** @type {HTMLInputElement} */
-      const input = assert(el.querySelector('.rc-search input'));
+      const input = assert(el.querySelector('.rc-search'));
 
       input.addEventListener('input', () => {
         this.searchQuery = input.value.trim().toLowerCase();
@@ -2661,7 +2660,7 @@
         }
       }
 
-      for (const r of this.replays) {
+      for (const r of resultList) {
         const el = document.createElement('div');
         el.className = 'rc-item';
 
