@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6
+// @version     1.6.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2576,7 +2576,7 @@
       });
 
       /** @type {HTMLInputElement} */
-      const input = assert(this.root.querySelector('.rc-search input'));
+      const input = assert(el.querySelector('.rc-search input'));
 
       input.addEventListener('input', () => {
         this.searchQuery = input.value.trim().toLowerCase();
