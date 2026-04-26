@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.8.2
+// @version     1.6.8.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -2566,7 +2566,7 @@
               <button data-act="ghost-opponent">ghost: opponent</button>
             </div>
           </div>
-          <input type="text" placeholder="Search..." class="rc-search" />
+          <input type="text" placeholder="search" class="rc-search" />
           <div class="rc-list"></div>
         </div>
       `;
@@ -2577,11 +2577,27 @@
       });
 
       /** @type {HTMLInputElement} */
-      const input = assert(el.querySelector('.rc-search'));
+      const searchField = assert(el.querySelector('.rc-search'));
+      searchField.addEventListener('input', () => {
+        const trimStart = searchField.value.trimStart();
+        if (searchField.value !== trimStart) {
+          let { selectionStart, selectionEnd, selectionDirection } = searchField;
+          const offset = trimStart.length - searchField.value.length;
+          searchField.value = trimStart;
 
-      input.addEventListener('input', () => {
-        this.searchQuery = input.value.trim().toLowerCase();
-        this._renderList();
+          if (selectionStart != null) selectionStart += offset;
+          if (selectionEnd != null) selectionEnd += offset;
+          searchField.setSelectionRange(selectionStart, selectionEnd, selectionDirection || undefined);
+        }
+        const value = searchField.value.trim();
+        if (this.searchQuery !== value) {
+          this.searchQuery = value;
+          this._renderList();
+        }
+      });
+      searchField.addEventListener('change', () => {
+        if (searchField.value !== this.searchQuery)
+          searchField.value = this.searchQuery;
       });
 
       document.body.appendChild(el);
