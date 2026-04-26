@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.4.5
+// @version     1.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -1105,7 +1105,7 @@
       this.cursor.pointerMove(
         this._cursorPos == null ?
           { x: -500, y: -500 } :
-        this._arenaToClient(this._cursorPos)
+          this._arenaToClient(this._cursorPos)
       );
       this._updateRaf = requestAnimationFrame(this._update);
     }
@@ -2389,6 +2389,9 @@
               <button data-act="delete">delete</button>
             </div>
             <div class="row">
+              <button data-act="generate-sort">generate sort</button>
+            </div>
+            <div class="row">
               <button data-act="replay">replay</button>
             </div>
             <div class="row">
@@ -2430,6 +2433,24 @@
         if (act === 'delete') this._deleteSelected();
         if (act === 'export') this._exportSelected();
         if (act === 'import') this._import();
+        if (act === 'generate-sort') this._UIgenerateSort();
+      });
+    }
+
+    _UIgenerateSort() {
+      new SortGenerationWidget(async (recording) => {
+        /** @type {ReplayEntry} */
+        const entry = {
+          id: uuid4(),
+          ts: Date.now(),
+          result: 0,
+          data: recording
+        };
+
+        await this._add(entry);
+        this.replays = await this._loadAll();
+        this.selectedId = this.replays[0].id;
+        this._renderList();
       });
     }
 
@@ -2577,7 +2598,7 @@
         this._replay.destroy();
         this._replay = null;
       }
-  
+
       const replay = new SwapReplay(r.data, snapshotHTML, this._cursor, mode);
       this._replay = replay;
 
@@ -2655,6 +2676,523 @@
       });
     }
   }
+
+  //#region Sort Generator Widget
+  const sortGenerationStyles = `
+    .sg-scrim {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: #1613168c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      padding: 24px;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+
+    .sg-modal {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 24px 80px #0000004d;
+      font-family: inherit;
+    }
+
+    .sg-modal h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      letter-spacing: -.5px;
+      color: var(--dark);
+    }
+
+    .sg-sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0 0 20px;
+    }
+
+    .sg-choose-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .sg-choose-btn {
+      background: var(--empty);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: border-color .15s, transform .15s;
+    }
+
+    .sg-choose-btn:hover, .sg-choose-btn.selected {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .sg-choose-btn.selected {
+      background: var(--bg);
+      box-shadow: 0 4px 12px #16131614;
+    }
+
+    .sg-choose-btn strong {
+      color: var(--dark);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .sg-choose-btn span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .sg-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .sg-input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 15px;
+      color: var(--dark);
+      box-sizing: border-box;
+      margin-bottom: 20px;
+    }
+
+    .sg-input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: transparent;
+    }
+
+    .sg-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .sg-primary-btn {
+      background: var(--dark);
+      color: var(--bg);
+      padding: 11px 22px;
+      border-radius: 100px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .12s, opacity .15s;
+    }
+
+    .sg-primary-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .sg-primary-btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .sg-secondary-btn {
+      background: none;
+      color: var(--muted);
+      padding: 11px 18px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .sg-secondary-btn:hover {
+      color: var(--dark);
+    }
+  `;
+
+  const sgStyleSheet = new CSSStyleSheet();
+  sgStyleSheet.replaceSync(sortGenerationStyles);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sgStyleSheet];
+
+  /**
+   * Modular sorting logic blocks.
+   * Each returns an array of { from, to } splice moves.
+   */
+  /** @type {Record<string, (arr: number[]) => { from: number, to: number }[]>} */
+  const Algorithms = {
+    insertion: (arr) => {
+      const moves = [];
+      const state = [...arr];
+      for (let i = 1; i < state.length; i++) {
+        let j = i;
+        while (j > 0 && state[j - 1] > state[i]) {
+          j--;
+        }
+        if (j !== i) {
+          moves.push({ from: i, to: j });
+          const [val] = state.splice(i, 1);
+          state.splice(j, 0, val);
+        }
+      }
+      return moves;
+    },
+
+    quicksort: (arr) => {
+      /** @type {{ from: number, to: number }[]} */
+      const moves = [];
+      const state = [...arr];
+
+      // Drag-and-Drop (Splice) adapted QuickSort
+      /**
+       * @param {number} low 
+       * @param {number} high 
+       */
+      const sort = (low, high) => {
+        if (low < high) {
+          const pi = partition(low, high);
+          sort(low, pi - 1);
+          sort(pi + 1, high);
+        }
+      };
+
+      /**
+       * @param {number} low 
+       * @param {number} high 
+       */
+      const partition = (low, high) => {
+        const pivot = state[high];
+        let i = low; // The destination index for elements smaller than pivot
+
+        for (let j = low; j < high; j++) {
+          if (state[j] < pivot) {
+            // Only move if it's not already in the correct position
+            if (i !== j) {
+              moves.push({ from: j, to: i });
+              const [val] = state.splice(j, 1);
+              state.splice(i, 0, val);
+            }
+            i++;
+          }
+        }
+
+        // Finally, move the pivot to its correct sorted index (i)
+        if (i !== high) {
+          moves.push({ from: high, to: i });
+          const [val] = state.splice(high, 1);
+          state.splice(i, 0, val);
+        }
+
+        return i;
+      };
+
+      sort(0, state.length - 1);
+      return moves;
+    },
+
+    lis: (arr) => {
+      // 1. Setup state with object references to handle potential duplicates safely
+      // and match the bot's expected {v: number} structure.
+      const state = arr.map(v => ({ v }));
+      const n = state.length;
+      if (n === 0) return [];
+
+      // 2. Identify Anchors via LIS (Rightmost/Latest LIS for stability)
+      const dp = new Array(n).fill(1);
+      const parent = new Array(n).fill(-1);
+
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+          if (state[j].v <= state[i].v && dp[i] < dp[j] + 1) {
+            dp[i] = dp[j] + 1;
+            parent[i] = j;
+          }
+        }
+      }
+
+      let maxIdx = 0;
+      for (let i = 1; i < n; i++) {
+        if (dp[i] >= dp[maxIdx]) maxIdx = i;
+      }
+
+      const anchorsSet = new Set();
+      let currIdx = maxIdx;
+      while (currIdx !== -1) {
+        anchorsSet.add(state[currIdx]);
+        currIdx = parent[currIdx];
+      }
+
+      // 3. Determine target sorting order for the non-anchors
+      const sortedTarget = [...state].sort((a, b) => a.v - b.v);
+      const nonAnchors = sortedTarget.filter(el => !anchorsSet.has(el));
+
+      /** @type {{from: number, to: number}[]} */
+      const moves = [];
+
+      // Helper: Find where an object SHOULD go based on current array state
+      /**
+       * @param {{v: number}} targetObj
+       */
+      const getToIdx = (targetObj) => {
+        let toIdx = 0;
+        const targetFinalRank = sortedTarget.indexOf(targetObj);
+        for (let j = 0; j < targetFinalRank; j++) {
+          const neighbor = sortedTarget[j];
+          const neighborIdx = state.indexOf(neighbor);
+          if (neighborIdx >= toIdx) toIdx = neighborIdx + 1;
+        }
+        return toIdx;
+      };
+
+      // Helper: Execute move, record indices for the Replay UI, and mutate state
+      /**
+       * @param {{v: number}} fromObj
+       * @param {number} rawToIdx
+       */
+      const applyMove = (fromObj, rawToIdx) => {
+        const fromIdx = state.indexOf(fromObj);
+        const actualToIdx = fromIdx < rawToIdx ? rawToIdx - 1 : rawToIdx;
+
+        if (actualToIdx === fromIdx) return;
+
+        // Record the index-based move
+        moves.push({ from: fromIdx, to: actualToIdx });
+
+        // Mutate the running state to simulate the drag-and-drop
+        state.splice(fromIdx, 1);
+        state.splice(actualToIdx, 0, fromObj);
+      };
+
+      // 4. Process all steps sequentially
+      for (const targetObj of nonAnchors) {
+        let toIdx = getToIdx(targetObj);
+        let fromIdx = state.indexOf(targetObj);
+
+        if (fromIdx === toIdx) continue;
+
+        // Standard move
+        applyMove(targetObj, toIdx);
+      }
+
+      return moves;
+    }
+  };
+
+  class SortGenerationWidget {
+    /**
+     * @param {(recording: SwapRecording) => void} callback
+     */
+    constructor(callback) {
+      this.callback = callback;
+      this.selectedAlgo = 'insertion';
+      this.root = this._createDOM();
+      document.body.appendChild(this.root);
+      this._bindEvents();
+    }
+
+    _createDOM() {
+      const el = document.createElement('div');
+      el.className = 'sg-scrim';
+      el.innerHTML = `
+      <div class="sg-modal">
+        <h2>Factory</h2>
+        <p class="sg-sub">Generate a synthetic match recording based on pure algorithms.</p>
+        
+        <div class="sg-choose-grid">
+          <button class="sg-choose-btn selected" data-algo="insertion">
+            <strong>Insertion Sort</strong>
+            <span>Human-like linear scanning</span>
+          </button>
+          <button class="sg-choose-btn" data-algo="quicksort">
+            <strong>Quicksort</strong>
+            <span>Fast, erratic partitions</span>
+          </button>
+          <button class="sg-choose-btn" data-algo="lis" style="grid-column: span 2;">
+            <strong>LIS Sort</strong>
+            <span>Mathematically perfect efficiency</span>
+          </button>
+        </div>
+
+        <label class="sg-label">Base Delay (ms between moves)</label>
+        <input type="number" class="sg-input" id="sg-delay" value="450" min="50" step="50">
+
+        <label class="sg-label">Custom Seed (Optional CSV, exactly 12 numbers)</label>
+        <input type="text" class="sg-input" id="sg-seed" placeholder="e.g. 50, 12, 85, 33... (leave blank for random)">
+        <div id="sg-seed-err" class="sg-sub" style="color: #b8432e; display: none; margin-top: -16px; margin-bottom: 20px;">
+          Seed must contain exactly 12 numeric elements.
+        </div>
+
+        <div class="sg-actions">
+          <button class="sg-secondary-btn" id="sg-cancel">Cancel</button>
+          <button class="sg-primary-btn" id="sg-generate">Generate Replay</button>
+        </div>
+      </div>
+    `;
+      return el;
+    }
+
+    _bindEvents() {
+      // Algo Selection
+      /** @type {NodeListOf<HTMLElement>} */
+      const btns = this.root.querySelectorAll('.sg-choose-btn');
+      btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          btns.forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          if (!btn.dataset.algo) return;
+          this.selectedAlgo = btn.dataset.algo;
+        });
+      });
+
+      /** @type {HTMLInputElement} */
+      const seedInput = assert(this.root.querySelector('#sg-seed'));
+      /** @type {HTMLButtonElement} */
+      const generateBtn = assert(this.root.querySelector('#sg-generate'));
+      /** @type {HTMLElement} */
+      const seedErr = assert(this.root.querySelector('#sg-seed-err'));
+
+      // Real-time Seed Validation
+      seedInput.addEventListener('input', () => {
+        const val = seedInput.value.trim();
+
+        // If empty, it's valid (will fallback to random seed)
+        if (!val) {
+          generateBtn.disabled = false;
+          seedInput.style.borderColor = 'var(--border)';
+          seedErr.style.display = 'none';
+          return;
+        }
+
+        // Parse and filter valid numbers
+        const parsed = val.split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+
+        // Check for exactly 12 valid numbers
+        if (parsed.length !== 12) {
+          generateBtn.disabled = true;
+          seedInput.style.borderColor = '#b8432e';
+          seedErr.style.display = 'block';
+        } else {
+          generateBtn.disabled = false;
+          seedInput.style.borderColor = 'var(--accent)'; // Highlight green/accent on success
+          seedErr.style.display = 'none';
+        }
+      });
+
+      // Actions
+      assert(this.root.querySelector('#sg-cancel')).addEventListener('click', () => this.close());
+      assert(this.root.querySelector('#sg-generate')).addEventListener('click', () => this._generate());
+
+      // Close on scrim click
+      this.root.addEventListener('click', (e) => {
+        if (e.target === this.root) this.close();
+      });
+    }
+
+    /**
+     * @param {number} length 
+     * @returns {number[]}
+     */
+    _generateRandomSeed(length = 12) {
+      const arr = Array.from({ length }, () => Math.floor(Math.random() * 99) + 1);
+      // Ensure no duplicates just to be safe
+      return [...new Set(arr)].length === length ? arr : this._generateRandomSeed(length);
+    }
+
+    _generate() {
+      /** @type {HTMLInputElement} */
+      const sgDelay = assert(this.root.querySelector('#sg-delay'));
+      const delay = parseInt(sgDelay.value, 10) || 450;
+      /** @type {HTMLInputElement} */
+      const sgSeed = assert(this.root.querySelector('#sg-seed'));
+      const seedInput = sgSeed.value;
+
+      /** @type {number[]} */
+      let startOrder = [];
+      if (seedInput.trim()) {
+        startOrder = seedInput.split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+      }
+      if (startOrder.length !== 12) {
+        startOrder = this._generateRandomSeed(12);
+      }
+
+      const moveSequence = Algorithms[this.selectedAlgo](startOrder);
+
+      /** @type {RecordedEvent[]} */
+      const events = [];
+      let currentTime = delay;
+      let currentState = [...startOrder];
+
+      /** @type {OpponentEvent[]} */
+      const opponent = [];
+      let oppState = [...startOrder];
+
+      for (const move of moveSequence) {
+        events.push({ t: currentTime, d: move.from, c: 1 });
+        currentTime += (delay * 0.8);
+        events.push({ t: currentTime, u: move.to, c: 1 });
+
+        const [val] = currentState.splice(move.from, 1);
+        currentState.splice(move.to, 0, val);
+
+        const [el] = oppState.splice(move.from, 1);
+        oppState.splice(move.to, 0, el);
+
+        opponent.push({
+          t: currentTime,
+          o: oppState.slice()
+        });
+
+        currentTime += (delay * 0.2);
+      }
+
+      // Dynamically assign rank class based on total time
+      let nameClass = 'name-bronze';
+      if (currentTime < 6000) nameClass = 'name-champion';
+      else if (currentTime < 8000) nameClass = 'name-grandmaster';
+      else if (currentTime < 10000) nameClass = 'name-master';
+      else if (currentTime < 12000) nameClass = 'name-diamond';
+      else if (currentTime < 14000) nameClass = 'name-platinum';
+      else if (currentTime < 16000) nameClass = 'name-gold';
+      else if (currentTime < 18000) nameClass = 'name-silver';
+
+      const recording = {
+        startOrder: [...startOrder],
+        opponentStartOrder: [...startOrder],
+        events: events,
+        opponent: opponent,
+        playerName: `${this.selectedAlgo} ${delay}ms`,
+        playerNameClass: nameClass,
+        opponentName: `${this.selectedAlgo} ${delay}ms`,
+        opponentNameClass: nameClass
+      };
+
+      this.callback(recording);
+      this.close();
+    }
+
+    close() {
+      this.root.remove();
+    }
+  }
+  //#endregion
 
 
   /** @type {any} */
