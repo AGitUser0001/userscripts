@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.4
+// @version     1.5.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -16,7 +16,7 @@
    * @typedef {{ t: number, u: number, c: 1 | 0 }} RecordedUpEvent
    * @typedef {RecordedMoveEvent | RecordedDownEvent | RecordedUpEvent} RecordedEvent
    *
-   * @typedef {{ t: number, o: number[] }} OpponentEvent
+   * @typedef {{ t: number, o: number[], n: number }} OpponentEvent
    *
    * @typedef {{
    *   startOrder: number[],
@@ -26,7 +26,9 @@
    *   playerName: string,
    *   playerNameClass: string | null,
    *   opponentName: string,
-   *   opponentNameClass: string | null
+   *   opponentNameClass: string | null,
+   *   playerElo: number | null,
+   *   opponentElo: number | null
    * }} SwapRecording
    */
 
@@ -183,7 +185,9 @@
         playerName: 'you',
         playerNameClass: null,
         opponentName: 'opponent',
-        opponentNameClass: null
+        opponentNameClass: null,
+        playerElo: null,
+        opponentElo: null
       };
 
       /** @type {HTMLElement | null} */
@@ -336,11 +340,21 @@
      * @returns {Promise<void>}
      */
     async start() {
-      await this._waitFor(() =>
-        !!document.querySelector('.tab-body .match-wrap') &&
-        !!document.querySelector('.arena') &&
-        !!document.querySelector('.arena .bar-val')
-      );
+      while (!document.querySelector('.tab-body .match-wrap')) {
+        await this._waitFor(() =>
+          !!document.querySelector('.tab-body .match-wrap') &&
+          !!document.querySelector('.vs-side .vs-elo')
+        );
+
+        this.data.playerElo = +assert(document.querySelector('.vs-side:not(.right) .vs-elo')).textContent;
+        this.data.opponentElo = +assert(document.querySelector('.vs-side.right .vs-elo')).textContent;
+
+        await this._waitFor(() =>
+          (!!document.querySelector('.arena') &&
+            !!document.querySelector('.arena .bar-val'))
+          || !document.querySelector('.tab-body .match-wrap')
+        );
+      }
 
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
@@ -384,6 +398,7 @@
      * @returns {void}
      */
     stop() {
+      if (!this.started) return;
       window.removeEventListener('pointermove', this._onMove, true);
       window.removeEventListener('pointerdown', this._onDown, true);
       window.removeEventListener('pointerup', this._onUp, true);
@@ -413,7 +428,9 @@
         playerName: this.data.playerName,
         playerNameClass: this.data.playerNameClass,
         opponentName: this.data.opponentName,
-        opponentNameClass: this.data.opponentNameClass
+        opponentNameClass: this.data.opponentNameClass,
+        playerElo: this.data.playerElo,
+        opponentElo: this.data.opponentElo
       };
     }
 
@@ -497,19 +514,28 @@
 
       /** @type {number[] | null} */
       let last = null;
+      let lastMoveCount = 0;
 
       this._observer = new MutationObserver(() => {
         const oppBars = queryOpponentBars(document);
         const state = readOpponentValuesFromHeights(oppBars, this._opponentHeightTable);
+        const moveCount = parseInt(assert(document.querySelector('.vs-side.right .vs-moves')).textContent);
 
-        if (!sameNumberArray(state, last)) {
+        if (moveCount !== lastMoveCount || !sameNumberArray(state, last)) {
           this.data.opponent.push({
             t: this._time(),
-            o: state
+            o: state,
+            n: moveCount
           });
           last = state;
+          lastMoveCount = moveCount;
         }
       });
+
+      this._observer.observe(
+        assert(document.querySelector('.vs-side.right .vs-moves')),
+        { characterData: true, childList: true, subtree: true }
+      );
 
       this._observer.observe(container, {
         attributes: true,
@@ -585,39 +611,50 @@
       /** @type {HTMLElement | null} */
       this.opponentMovesEl = this.root.querySelector('.match-head .vs-side.right .vs-moves');
 
-      let { opponentName, playerName, opponentNameClass, playerNameClass } = this.data;
+      let { opponentName, playerName, opponentNameClass, playerNameClass, playerElo, opponentElo } = this.data;
       if (mode === 'ghost-player') {
         opponentName = playerName;
         opponentNameClass = playerNameClass;
+        opponentElo = playerElo;
       }
 
       if (mode.startsWith('ghost-')) {
         playerName = 'you';
         playerNameClass = null;
+        playerElo = null;
+        for (const el of document.querySelectorAll('.player-stats .stat')) {
+          if (el.textContent.includes('elo'))
+            playerElo = parseInt(el.textContent);
+        }
       }
 
-      const playerNameEl = this.root.querySelector('.vs-side:not(.right) .vs-name');
-
-      if (playerNameEl) {
-        playerNameEl.textContent = playerName;
+      for (const el of this.root.querySelectorAll('.vs-side:not(.right) .vs-name')) {
+        el.textContent = playerName;
         if (playerNameClass)
-          playerNameEl.classList.add(playerNameClass);
+          el.classList.add(playerNameClass);
       }
 
-      const oppNameEl = this.root.querySelector('.vs-side.right .vs-name');
-
-      if (oppNameEl) {
-        oppNameEl.textContent = opponentName;
+      for (const el of this.root.querySelectorAll('.vs-side.right .vs-name, .opp-label span')) {
+        el.textContent = opponentName;
         if (opponentNameClass)
-          oppNameEl.classList.add(opponentNameClass);
+          el.classList.add(opponentNameClass);
       }
 
-      const oppNameEl2 = this.root.querySelector('.opp-label span');
-      if (oppNameEl2) {
-        oppNameEl2.textContent = opponentName;
-        if (opponentNameClass)
-          oppNameEl2.classList.add(opponentNameClass);
-      }
+      const playerEloEl = this.root.querySelector('.vs-side:not(.right) .vs-elo');
+      if (playerEloEl) playerEloEl.textContent = String(playerElo == null ? '?' : playerElo);
+
+      const opponentEloEl = this.root.querySelector('.vs-side.right .vs-elo');
+      if (opponentEloEl) opponentEloEl.textContent = String(opponentElo == null ? '?' : opponentElo);
+
+      /** @type {HTMLElement} */
+      this.countdownEl = assert(this.root.querySelector('.stage-1'));
+      this.countdownEl.style.display = 'none';
+
+      /** @type {HTMLElement} */
+      this.countdownTextEl = assert(this.countdownEl.querySelector('.countdown-big'));
+
+      /** @type {HTMLElement} */
+      this.matchEl = assert(this.root.querySelector('.stage-2'));
 
       /** @type {number} */
       this.gap = 8;
@@ -694,13 +731,26 @@
       document.querySelector('.page .tab-body')
     );
 
-    _originalTabs = assert(
+    _tabList = assert(
       document.querySelector('.page .tabs')
     );
 
-    _tabs =
-      /** @type {typeof this._originalTabs} */
-      (this._originalTabs.cloneNode(true));
+    /** @type {HTMLElement} */
+    _originalActiveTab = assert(
+      document.querySelector('.page .tabs .tab.active')
+    );
+
+    _tab =
+      /** @type {typeof this._originalActiveTab} */
+      (this._originalActiveTab.cloneNode(true));
+
+    /**
+     * @param {PointerEvent} e 
+     */
+    _tabClickListener = e => {
+      this.destroy();
+      e.stopImmediatePropagation();
+    }
 
     _navigateListener = () => this.destroy();
 
@@ -717,26 +767,9 @@
         throw new Error('Replay HTML did not produce a root element');
       }
 
-      /** @type {NodeListOf<HTMLButtonElement>} */
-      const allTabs = this._tabs.querySelectorAll('.tab');
-      for (const tab of allTabs) {
-        if (tab.classList.contains('active')) {
-          const newTab = /** @type {typeof tab} */ (tab.cloneNode(true));
-          newTab.textContent = {
-            'replay': 'replay',
-            'ghost-player': 'ghost: player',
-            'ghost-opponent': 'ghost: opponent'
-          }[this.mode];
-          this._tabs.appendChild(newTab);
-
-          tab.classList.remove('active');
-          tab.addEventListener('click', this._navigateListener);
-        } else {
-          tab.classList.add('tab-disabled');
-          tab.disabled = true;
-        }
-      }
-      this._originalTabs.replaceWith(this._tabs);
+      this._originalActiveTab.classList.remove('active');
+      this._originalActiveTab.addEventListener('click', this._tabClickListener, { capture: true });
+      this._tabList.appendChild(this._tab);
 
       this._originalTabBody.replaceWith(root);
       navigation.addEventListener('navigate', this._navigateListener);
@@ -782,7 +815,9 @@
       }
 
       this.root.replaceWith(this._originalTabBody);
-      this._tabs.replaceWith(this._originalTabs);
+      this._originalActiveTab.classList.add('active');
+      this._originalActiveTab.removeEventListener('click', this._tabClickListener, { capture: true });
+      this._tab.remove();
     }
 
     /**
@@ -1040,7 +1075,10 @@
      */
     _handleOpponent(ev) {
       this._updateOpponent(ev.o);
-      this._lastOpponentMoveCount++;
+      if (ev.n != undefined)
+        this._lastOpponentMoveCount = ev.n;
+      else
+        this._lastOpponentMoveCount++;
       this._renderMoveCounts();
     }
 
@@ -1048,6 +1086,17 @@
      * @returns {Promise<void>}
      */
     async play() {
+      this.countdownEl.style.display = '';
+      this.matchEl.style.display = 'none';
+      let countdown = 3;
+      while (countdown > 0 && !this._destroyed) {
+        this.countdownTextEl.textContent = `${countdown}`;
+        await new Promise(r => setTimeout(r, 1000));
+        countdown--;
+      }
+      this.countdownEl.style.display = 'none';
+      this.matchEl.style.display = '';
+
       this.startTime = performance.now();
       this._startUiTimer();
       this._renderMoveCounts();
@@ -1241,6 +1290,7 @@
       const result = [];
 
       let lastDown = -1;
+      let moveCount = 0;
 
       for (const e of this._events) {
         if ('d' in e) {
@@ -1256,7 +1306,8 @@
 
           result.push({
             t: e.t,
-            o: bars.map(x => x.v)
+            o: bars.map(x => x.v),
+            n: ++moveCount
           });
 
           lastDown = -1;
@@ -1854,7 +1905,17 @@
 
   const snapshotHTML = `
   <section class="tab-body ${svClass}">
-    <div class="match-wrap ${svClass}">
+    <div class="match-wrap ${svClass} stage-1">
+      <div class="match-head ${svClass}">
+        <div class="vs-side ${svClass}"><span class="vs-name ${svClass}">you</span> <span
+                class="vs-elo ${svClass}">?</span></div>
+        <div class="vs-dot ${svClass}">vs</div>
+        <div class="vs-side right ${svClass}"><span class="vs-name ${svClass}">opponent</span>
+          <span class="vs-elo ${svClass}">?</span></div>
+      </div>
+      <div class="countdown-big ${svClass}">3</div>
+    </div>
+    <div class="match-wrap ${svClass} stage-2">
       <div class="match-head ${svClass}">
         <div class="vs-side ${svClass}"><span class="vs-name ${svClass}">you</span> <span
                 class="vs-time ${svClass}">0.00s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
@@ -2380,8 +2441,6 @@
         await this.recorder.start();
 
         await this._waitFor(() => !this.recorder?.started);
-
-        this.recorder.stop();
 
         const result = await this._detectResult();
 
@@ -3198,12 +3257,13 @@
       let oppState = [...startOrder];
 
       const maxVal = Math.max(...startOrder);
-      
+
       /** @type { [x: number, y: number] } */
       let currentCursor = [0.5, 0.5]; // Start the cursor in the dead center of the arena
 
       const fidelity = 120 / 1000; // Frames per second
 
+      let moveCount = 0;
       for (const move of moveSequence) {
         const targetVal = currentState[move.from];
 
@@ -3245,7 +3305,8 @@
 
         opponent.push({
           t: currentTime,
-          o: oppState.slice()
+          o: oppState.slice(),
+          n: ++moveCount
         });
 
         // Rest before next move (remaining 20% of the delay)
@@ -3270,7 +3331,9 @@
         playerName: `${this.selectedAlgo} ${delay}ms`,
         playerNameClass: nameClass,
         opponentName: `${this.selectedAlgo} ${delay}ms`,
-        opponentNameClass: nameClass
+        opponentNameClass: nameClass,
+        playerElo: null,
+        opponentElo: null
       };
 
       this.callback(recording);
