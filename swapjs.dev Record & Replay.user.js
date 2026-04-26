@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.6
+// @version     1.6.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -2982,11 +2982,13 @@
               let prefixBest = 0;
 
               for (const token of tokens) {
-                const slice = token.slice(0, part.length);
-                const dist = fuzzySubstring(part, slice);
-                const score = 1 - dist / part.length;
-
-                if (score > prefixBest) prefixBest = score;
+                for (let i = part.length; i <= part.length + 2; i++) {
+                  if (i >= token.length) break;
+                  const slice = token.slice(0, i);
+                  const dist = fuzzySubstring(part, slice);
+                  const score = 1 - dist / i;
+                  if (score > prefixBest) prefixBest = score;
+                }
               }
 
               bonus += prefixBest * 0.3;
