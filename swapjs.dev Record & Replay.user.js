@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.5
+// @version     1.5.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -2467,6 +2467,9 @@
 
         const rt = document.querySelector('.result-wrap .result-title, .result-wrap .big-text');
         if (!rt) continue;
+
+        const pb = document.querySelector('.result-wrap .primary-btn');
+        if (!pb) continue;
 
         const t = rt.textContent.toLowerCase();
 
