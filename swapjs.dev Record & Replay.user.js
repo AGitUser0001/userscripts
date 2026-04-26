@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.8
+// @version     1.6.8.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2962,9 +2962,9 @@
 
         for (const [_key, [weight, text]] of fields) {
           const dist = fuzzySubstring(query, text);
-          let score = Math.max(0, 1 - dist);
+          let score = Math.max(0, 1.5 - dist);
           if (text.includes(query))
-            score += 0.2;
+            score += 0.5;
           if (score > totalScore) totalScore = score;
         }
 
