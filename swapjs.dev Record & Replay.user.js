@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.7
+// @version     1.5.7.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -617,11 +617,6 @@
       this.opponentMovesEl = this.root.querySelector('.match-head .vs-side.right .vs-moves');
 
       let { opponentName, playerName, opponentNameClass, playerNameClass, playerElo, opponentElo } = this.data;
-      if (this.data.matchLength == undefined) {
-        let lastEventTime = this._events.at(-1)?.t || 0;
-        let lastOppTime = this._opponentEvents.at(-1)?.t || 0;
-        this.data.matchLength = Math.max(lastEventTime, lastOppTime);
-      }
 
       if (mode === 'ghost-player') {
         opponentName = playerName;
@@ -710,6 +705,12 @@
 
       /** @type {OpponentEvent[]} */
       this._opponentEvents = data.opponent.slice().sort((a, b) => a.t - b.t);
+
+      if (this.data.matchLength == undefined) {
+        let lastEventTime = this._events.at(-1)?.t || 0;
+        let lastOppTime = this._opponentEvents.at(-1)?.t || 0;
+        this.data.matchLength = Math.max(lastEventTime, lastOppTime);
+      }
 
       this._startOrder = this.data.startOrder.slice();
       this._opponentStartOrder = this.data.opponentStartOrder.slice();
