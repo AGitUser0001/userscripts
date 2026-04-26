@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.5
+// @version     1.6.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -2938,11 +2938,12 @@
  * @param {ReplayEntry[]} list
  */
   function searchReplays(query, list) {
-    const parts = query
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
+    /** @param {string} s */
+    const tokenize = (s) =>
+      s.split(/[\s\-_/.,]+/).filter(Boolean)
+        .map(p => p.toLowerCase());
+
+    const parts = tokenize(query);
 
     if (!parts.length) return list;
 
@@ -2962,13 +2963,37 @@
         for (const part of parts) {
           let score = 0;
 
-          for (const [key, [weight, text]] of fields) {
-            const dist = fuzzySubstring(part, text);
-            const qLen = part.length;
+          for (const [_key, [weight, text]] of fields) {
+            const tokens = tokenize(text);
 
-            const quality = Math.max(0, 1 - dist / qLen);
+            let bestLocal = 0;
 
-            const weighted = quality * weight;
+            // Tokens
+            for (const token of tokens) {
+              const dist = fuzzySubstring(part, token);
+              bestLocal = Math.max(bestLocal, 1 - dist / part.length);
+            }
+
+            let bonus = 0;
+
+
+            if (text.includes(part)) bonus += 0.2;
+            {
+              let prefixBest = 0;
+
+              for (const token of tokens) {
+                const slice = token.slice(0, part.length);
+                const dist = fuzzySubstring(part, slice);
+                const score = 1 - dist / part.length;
+
+                if (score > prefixBest) prefixBest = score;
+              }
+
+              bonus += prefixBest * 0.3;
+            };
+            if (tokens.includes(part)) bonus += 0.2;
+
+            const weighted = Math.max(0, bestLocal + bonus) * weight;
 
             if (weighted > score) score = weighted;
           }
@@ -3045,14 +3070,7 @@
 
     // 4. Result is the minimum value in the last row
     // This represents the best match found anywhere in the haystack.
-    let score = Math.min(...rows[n]);
-
-    // reward exact matches
-    if (s2.includes(s1)) {
-      score -= 2; // bonus
-    }
-
-    return score;
+    return Math.min(...rows[n]) / n;
   }
 
   //#region Sort Generator Widget
