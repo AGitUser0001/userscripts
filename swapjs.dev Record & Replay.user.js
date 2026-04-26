@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.8.1
+// @version     1.6.8.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -2945,8 +2945,6 @@
 
     const parts = tokenize(query);
 
-    if (!parts.length) return list;
-
     return list
       .map(r => {
         /** @type {Map<string, [weight: number, text: string]>} */
@@ -2962,7 +2960,7 @@
 
         for (const [_key, [weight, text]] of fields) {
           const dist = fuzzySubstring(query, text);
-          let score = Math.max(0, 1.5 - dist);
+          let score = Math.max(0, 1 - dist);
           if (text.includes(query))
             score += 0.5;
           if (score > totalScore) totalScore = score;
