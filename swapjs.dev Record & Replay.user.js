@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.1
+// @version     1.5.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -3128,7 +3128,7 @@
       return [...new Set(arr)].length === length ? arr : this._generateRandomSeed(length);
     }
 
-    _generate() {
+    _generate(isCursor = true) {
       /** @type {HTMLInputElement} */
       const sgDelay = assert(this.root.querySelector('#sg-delay'));
       const delay = parseInt(sgDelay.value, 10) || 450;
@@ -3156,11 +3156,46 @@
       const opponent = [];
       let oppState = [...startOrder];
 
+      const maxVal = Math.max(...startOrder);
+      
+      /** @type { [x: number, y: number] } */
+      let currentCursor = [0.5, 0.5]; // Start the cursor in the dead center of the arena
+
+      const fidelity = 120 / 1000; // Frames per second
+
       for (const move of moveSequence) {
+        const targetVal = currentState[move.from];
+
+        // --- PHASE 1: Travel to pickup the bar ---
+        const pickupHotspot = this._getBarHotspot(move.from, targetVal, maxVal, currentState.length);
+        const hoverDuration = delay * 0.3; // 30% of the time is spent moving to the bar
+
+        const hoverPath = this._synthesizeMousePath(
+          currentCursor, pickupHotspot, currentTime, hoverDuration, hoverDuration * fidelity, isCursor
+        );
+        events.push(...hoverPath);
+        currentTime += hoverDuration;
+        currentCursor = pickupHotspot;
+
+        // Click down
         events.push({ t: currentTime, d: move.from, c: 1 });
-        currentTime += (delay * 0.8);
+
+        // --- PHASE 2: Drag to the destination ---
+        // Calculate where the bar WILL be dropped
+        const dropHotspot = this._getBarHotspot(move.to, targetVal, maxVal, currentState.length);
+        const dragDuration = delay * 0.5; // 50% of the time is spent dragging it
+
+        const dragPath = this._synthesizeMousePath(
+          currentCursor, dropHotspot, currentTime, dragDuration, dragDuration * fidelity, isCursor
+        );
+        events.push(...dragPath);
+        currentTime += dragDuration;
+        currentCursor = dropHotspot;
+
+        // Drop it
         events.push({ t: currentTime, u: move.to, c: 1 });
 
+        // Mutate local state
         const [val] = currentState.splice(move.from, 1);
         currentState.splice(move.to, 0, val);
 
@@ -3172,6 +3207,7 @@
           o: oppState.slice()
         });
 
+        // Rest before next move (remaining 20% of the delay)
         currentTime += (delay * 0.2);
       }
 
@@ -3202,6 +3238,83 @@
 
     close() {
       this.root.remove();
+    }
+
+    /**
+     * Calculates a randomized [x, y] percentage coordinate within a bar's exact bounding box.
+     * @param {number} index The current logical index of the bar
+     * @param {number} val The value of the bar
+     * @param {number} maxVal The maximum value in the array
+     * @param {number} totalBars The total number of bars (N)
+     * @returns {[number, number]}
+     */
+    _getBarHotspot(index, val, maxVal, totalBars) {
+      // 1. Recreate the layout math exactly as the game computes it
+      const W = 300; // Assumed moderate arena size
+      const gap = 8;
+      const barWidth = Math.max(12, (W - gap * (totalBars - 1)) / totalBars);
+      const step = barWidth + gap;
+
+      // 2. Calculate pixel bounds
+      const minX_px = index * step;
+      const maxX_px = minX_px + barWidth;
+
+      // 3. Convert pixel bounds to percentages 
+      const minX = minX_px / W;
+      const maxX = maxX_px / W;
+
+      // Apply horizontal padding (e.g., 20% of the bar's width) so it doesn't clip the edge
+      const padX = (barWidth * 0.2) / W;
+      const safeMinX = minX + padX;
+      const safeMaxX = maxX - padX;
+
+      // 4. Calculate Y bounds based on value height
+      // Assuming the tallest bar takes up ~90% of the arena height
+      const heightPercent = (val / maxVal) * 0.9;
+      const paddingY = 0.04; // 4% padding from top/bottom of the bar itself
+
+      const minY = 1 - heightPercent + paddingY;
+      const maxY = 1 - paddingY;
+
+      // 5. Pick a random target inside the safe box
+      const targetX = safeMinX + (Math.random() * (safeMaxX - safeMinX));
+      const targetY = minY + (Math.random() * (maxY - minY));
+
+      return [
+        targetX,
+        targetY
+      ];
+    }
+
+    /**
+     * Generates a sequence of interpolated `m` events between two points.
+     * @param {[number, number]} start [x, y]
+     * @param {[number, number]} end [x, y]
+     * @param {number} startTime Timestamp when movement begins
+     * @param {number} duration How long the movement takes
+     * @param {number} steps How many 'm' events to generate
+     * @param {boolean} isCursor Sets c = 1 | 0
+     * @returns {RecordedMoveEvent[]}
+     */
+    _synthesizeMousePath(start, end, startTime, duration, steps, isCursor) {
+      /** @type {RecordedMoveEvent[]} */
+      const pathEvents = [];
+      const timeStep = duration / steps;
+
+      for (let i = 1; i <= steps; i++) {
+        // Simple linear interpolation (can add Bezier curves or noise later)
+        const progress = i / steps;
+        const x = start[0] + (end[0] - start[0]) * progress;
+        const y = start[1] + (end[1] - start[1]) * progress;
+
+        pathEvents.push({
+          t: Math.floor(startTime + (timeStep * i)),
+          m: [x, y],
+          c: isCursor ? 1 : 0
+        });
+      }
+
+      return pathEvents;
     }
   }
   //#endregion
