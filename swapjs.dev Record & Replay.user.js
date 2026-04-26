@@ -2322,29 +2322,45 @@
       const tx = assert(this.db).transaction('replays');
       const store = tx.objectStore('replays');
 
-      return new Promise(res => {
+      return new Promise((res, rej) => {
         const req = store.getAll();
         req.onsuccess = () => {
           const arr = req.result.sort((a, b) => b.ts - a.ts);
           res(arr);
         };
+        req.onerror = () => rej(req.error);   // specific failure
+        tx.onabort = () => rej(tx.error);     // transaction failed
       });
     }
 
     /**
      * @param {ReplayEntry} entry
+     * @returns {Promise<void>}
      */
     async _add(entry) {
       const tx = assert(this.db).transaction('replays', 'readwrite');
-      tx.objectStore('replays').add(entry);
+      const req = tx.objectStore('replays').add(entry);
+
+      return new Promise((res, rej) => {
+        req.onerror = () => rej(req.error);   // specific failure
+        tx.onabort = () => rej(tx.error);     // transaction failed
+        tx.oncomplete = () => res();          // success
+      });
     }
 
     /**
      * @param {IDBValidKey} id
+     * @returns {Promise<void>}
      */
     async _delete(id) {
       const tx = assert(this.db).transaction('replays', 'readwrite');
-      tx.objectStore('replays').delete(id);
+      const req = tx.objectStore('replays').delete(id);
+
+      return new Promise((res, rej) => {
+        req.onerror = () => rej(req.error);   // specific failure
+        tx.onabort = () => rej(tx.error);     // transaction failed
+        tx.oncomplete = () => res();          // success
+      });
     }
 
     /* ================= INIT ================= */
