@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.9.1
+// @version     1.5.9.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -1131,6 +1131,7 @@
       }
       this.countdownEl.style.display = 'none';
       this.matchEl.style.display = '';
+      this._layout();
       this.matchEl.scrollIntoView({
         behavior: "smooth",
         block: "start"
