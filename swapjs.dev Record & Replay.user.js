@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.3
+// @version     1.6.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -2960,7 +2960,7 @@
         let matchedParts = 0;
 
         for (const part of parts) {
-          let best = 0;
+          let score = 0;
 
           for (const [key, [weight, text]] of fields) {
             const dist = fuzzySubstring(part, text);
@@ -2970,11 +2970,11 @@
 
             const weighted = quality * weight;
 
-            if (weighted > best) best = weighted;
+            if (weighted > score) score = weighted;
           }
 
-          if (best > 0.2) {
-            totalScore += best;
+          if (score > 0.4) {
+            totalScore += score;
             matchedParts++;
           }
         }
@@ -2988,10 +2988,10 @@
           date: r.ts
         };
       })
-      .filter(x => x.score > 0.2)
+      .filter(x => x.score > 0.4)
       .sort((a, b) => {
         // strong match wins
-        if (Math.abs(a.score - b.score) > 0.25) {
+        if (Math.abs(a.score - b.score) > 0.2) {
           return b.score - a.score;
         }
         // otherwise chronological
