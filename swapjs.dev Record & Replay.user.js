@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.7.4
+// @version     1.5.8
 // @author      auser0001
 // ==/UserScript==
 
@@ -342,8 +342,14 @@
      * @returns {Promise<void>}
      */
     async start() {
-      while (!document.querySelector('.tab-body .match-wrap')) {
+      const isCorrectTab = () =>
+        document.querySelector('.tab.active')?.textContent.includes('1v1 ranked')
+          ? true : false;
+      const loopCond = () =>
+        !document.querySelector('.tab-body .match-wrap') || !isCorrectTab();
+      while (loopCond()) {
         await this._waitFor(() =>
+          isCorrectTab() &&
           !!document.querySelector('.tab-body .match-wrap') &&
           !!document.querySelector('.vs-side .vs-elo')
         );
@@ -354,7 +360,7 @@
         await this._waitFor(() =>
           (!!document.querySelector('.arena') &&
             !!document.querySelector('.arena .bar-val'))
-          || !document.querySelector('.tab-body .match-wrap')
+          || loopCond()
         );
       }
 
