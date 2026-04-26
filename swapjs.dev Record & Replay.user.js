@@ -1046,8 +1046,10 @@
             if (elapsed > this.data.matchLength)
               frozenPlayerMs = elapsed;
           } else if (this.mode.startsWith('ghost-')) {
-            if (this._isSorted())
+            if (this._isSorted()) {
               frozenPlayerMs = playerMs;
+              this._onFinish();
+            }
           }
         }
 
@@ -1300,8 +1302,6 @@
       this._lastPlayerMoveCount++;
       this._renderMoveCounts();
       this._layout();
-
-      if (this._isSorted()) this._onFinish();
     }
 
     _convertPlayerToOpponent() {
@@ -1345,20 +1345,6 @@
             throw new Error('Missing .bar-val in player bar');
           }
           return Number(valEl.textContent);
-        }
-      );
-
-      for (let i = 1; i < vals.length; i++) {
-        if (vals[i] < vals[i - 1]) return false;
-      }
-      return true;
-    }
-
-
-    _oppIsSorted() {
-      const vals = this.oppBars.map(
-        bar => {
-          return parseFloat(bar.style.height);
         }
       );
 
@@ -3145,8 +3131,8 @@
       el.className = 'sg-scrim';
       el.innerHTML = `
       <div class="sg-modal">
-        <h2>Factory</h2>
-        <p class="sg-sub">Generate a synthetic match recording based on pure algorithms.</p>
+        <h2>Generate Sort</h2>
+        <p class="sg-sub">Generate a match recording using sorting algorithms.</p>
         
         <div class="sg-choose-grid">
           <button class="sg-choose-btn selected" data-algo="${forbiddenSort}">
