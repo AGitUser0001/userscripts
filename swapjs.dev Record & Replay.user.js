@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.2
+// @version     1.5.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -3269,9 +3269,8 @@
       const safeMaxX = maxX - padX;
 
       // 4. Calculate Y bounds based on value height
-      // Assuming the tallest bar takes up ~90% of the arena height
-      const heightPercent = (val / maxVal) * 0.9;
-      const paddingY = 0.04; // 4% padding from top/bottom of the bar itself
+      const heightPercent = val / maxVal;
+      const paddingY = heightPercent * 0.2; // 20% padding of the bar's height
 
       const minY = 1 - heightPercent + paddingY;
       const maxY = 1 - paddingY;
