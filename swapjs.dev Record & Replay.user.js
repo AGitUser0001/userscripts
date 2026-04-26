@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.10.3
+// @version     1.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -2294,6 +2294,20 @@
       transform: rotate(-90deg);
     }
 
+    .rc-search {
+      padding: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rc-search input {
+      width: 100%;
+      background: var(--bg-2);
+      border: none;
+      color: var(--text);
+      padding: 4px 6px;
+      font-size: 12px;
+    }
+
     /* --- Mobile --- */
     @media (max-width: 600px) {
       .rc-root.is-collapsed {
@@ -2335,6 +2349,7 @@
    */
 
   class ReplayController {
+    //#region Cursor Data
     /*!
      * The following icon data is provided by Phosphor Icons under the MIT License,
      * and has been modified by a script for use as UI cursor icons.
@@ -2361,6 +2376,7 @@
      * SOFTWARE.
      */
     _cursor = new FakeCursor({ "default": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%22-8.511%2032.217%20237.615%20237.615%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3C%2Fsvg%3E", "x": 2, "y": 0 }, "none": { "url": "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'/%3E", "x": 0, "y": 0 }, "context-menu": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%22-8.511%2032.217%20237.615%20237.615%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cg%20transform%3D%22matrix(.6%200%200%20.6%2082.4%2020)%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Crect%20width%3D%22192%22%20height%3D%22160%22%20x%3D%2232%22%20y%3D%2248%22%20fill%3D%22%23fff%22%20rx%3D%228%22%2F%3E%3Crect%20width%3D%22192%22%20height%3D%22160%22%20x%3D%2232%22%20y%3D%2248%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2224%22%20rx%3D%228%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2224%22%20d%3D%22M80%2096h96m-96%2032h96m-96%2032h96%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E", "x": 2, "y": 0 }, "help": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2220%2020%20216%20216%22%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M224%20128a96%2096%200%201%201-96-96%2096%2096%200%200%201%2096%2096%22%2F%3E%3Cpath%20d%3D%22M140%20180a12%2012%200%201%201-12-12%2012%2012%200%200%201%2012%2012M128%2072c-22.06%200-40%2016.15-40%2036v4a8%208%200%200%200%2016%200v-4c0-11%2010.77-20%2024-20s24%209%2024%2020-10.77%2020-24%2020a8%208%200%200%200-8%208v8a8%208%200%200%200%2016%200v-.72c18.24-3.35%2032-17.9%2032-35.28%200-19.85-17.94-36-40-36m104%2056A104%20104%200%201%201%20128%2024a104.11%20104.11%200%200%201%20104%20104m-16%200a88%2088%200%201%200-88%2088%2088.1%2088.1%200%200%200%2088-88%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "pointer": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2212.031%2012%20232%20232%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M196%2096a20%2020%200%200%200-20%2020v-16a20%2020%200%200%200-40%200V44a20%2020%200%200%200-40%200v108l-18.68-30a20%2020%200%200%200-34.64%2020c37.51%2066%2049.14%2090%2093.32%2090a80%2080%200%200%200%2080-80v-36a20%2020%200%200%200-20-20%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M42.68%20142a20%2020%200%200%201%2034.64-20L96%20152V44a20%2020%200%200%201%2040%200v56a20%2020%200%200%201%2040%200v16a20%2020%200%200%201%2040%200v36a80%2080%200%200%201-80%2080c-44.18%200-55.81-24-93.32-90%22%2F%3E%3C%2Fsvg%3E", "x": 7, "y": 0 }, "progress": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%22-8.511%2032.217%20237.615%20237.615%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cg%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M82.4%2020H236v153.6H82.4z%22%2F%3E%3Cpath%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2221.6%22%20d%3D%22M159.2%2039.2v19.2m57.6%2038.4h-19.2m2.328%2040.728L186.35%20123.95M159.2%20154.4v-19.2m-40.728%202.328%2013.578-13.578M101.6%2096.8h19.2m-2.328-40.728L132.05%2069.65%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E", "x": 2, "y": 0 }, "wait": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2220%2022.055%20216%20216%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20d%3D%22M78.6%2045.67A96%2096%200%200%200%2032%20128v1.61c39.27-29.85%2067.64-15.73%2096-1.61-2-31.62-3.91-63.25-49.4-82.33M81.4%20212a96%2096%200%200%200%2094.6-.81c.47-.27.94-.53%201.4-.81C131.91%20191.25%20130%20159.62%20128%20128c-26.41%2017.5-52.82%2035-46.6%2084M224%20126.39a96%2096%200%200%200-48-81.53l-1.4-.81C180.82%2093%20154.41%20110.5%20128%20128c28.36%2014.12%2056.73%2028.24%2096-1.61%22%20opacity%3D%22.2%22%2F%3E%3Ccircle%20cx%3D%22128%22%20cy%3D%22128%22%20r%3D%2296%22%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M32%20129.61c78.55-59.69%20113.45%2056.47%20192-3.22%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M177.4%20210.33c-91-38.17-7.82-126.49-98.8-164.66%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M174.6%2044.05C187%20141.93%2069%20114.07%2081.4%20212%22%2F%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22gray%22%20d%3D%22M78.6%2045.67A96%2096%200%200%200%2032%20128v1.61c39.27-29.85%2067.64-15.73%2096-1.61-2-31.62-3.91-63.25-49.4-82.33M81.4%20212a96%2096%200%200%200%2094.6-.81c.47-.27.94-.53%201.4-.81C131.91%20191.25%20130%20159.62%20128%20128c-26.41%2017.5-52.82%2035-46.6%2084M224%20126.39a96%2096%200%200%200-48-81.53l-1.4-.81C180.82%2093%20154.41%20110.5%20128%20128c28.36%2014.12%2056.73%2028.24%2096-1.61%22%2F%3E%3Ccircle%20cx%3D%22128%22%20cy%3D%22128%22%20r%3D%2296%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M32%20129.61c78.55-59.69%20113.45%2056.47%20192-3.22%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M177.4%20210.33c-91-38.17-7.82-126.49-98.8-164.66%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M174.6%2044.05C187%20141.93%2069%20114.07%2081.4%20212%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "cell": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2236%2036%20184%20184%22%3E%3Cpath%20d%3D%22M200%2040H56a16%2016%200%200%200-16%2016v144a16%2016%200%200%200%2016%2016h144a16%2016%200%200%200%2016-16V56a16%2016%200%200%200-16-16m0%2080h-64V56h64Zm-80-64v64H56V56Zm-64%2080h64v64H56Zm144%2064h-64v-64h64z%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "crosshair": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2232%2032%20192%20192%22%3E%3Cpath%20d%3D%22M220%20128a4%204%200%200%201-4%204h-84v84a4%204%200%200%201-8%200v-84H40a4%204%200%200%201%200-8h84V40a4%204%200%200%201%208%200v84h84a4%204%200%200%201%204%204%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "text": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2238%2038%20180%20180%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2212%22%20d%3D%22M128%2080a32%2032%200%200%201%2032-32h16m0%20160h-16a32%2032%200%200%201-32-32m-48%2032h16a32%2032%200%200%200%2032-32V80a32%2032%200%200%200-32-32H80m24%2080h48%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "vertical-text": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2238%2038%20180%20180%22%3E%3Cg%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M256%200v256H0V0z%22%2F%3E%3Cpath%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2212%22%20d%3D%22M176%20128a32%2032%200%200%201%2032%2032v16m-160%200v-16a32%2032%200%200%201%2032-32M48%2080v16a32%2032%200%200%200%2032%2032h96a32%2032%200%200%200%2032-32V80m-80%2024v48%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "alias": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%22-8.511%2032.217%20237.615%20237.615%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cg%20transform%3D%22matrix(.6%200%200%20.6%2047.2%2020)%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Crect%20width%3D%22144%22%20height%3D%22144%22%20x%3D%2240%22%20y%3D%2272%22%20opacity%3D%22.2%22%20rx%3D%228%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2224%22%20d%3D%22m136%20120%2080-80m0%2064-.01-63.99L152%2040m32%2096v72a8%208%200%200%201-8%208H48a8%208%200%200%201-8-8V80a8%208%200%200%201%208-8h72%22%2F%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Crect%20width%3D%22144%22%20height%3D%22144%22%20x%3D%2240%22%20y%3D%2272%22%20fill%3D%22gray%22%20rx%3D%228%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2224%22%20d%3D%22m136%20120%2080-80m0%2064-.01-63.99L152%2040m32%2096v72a8%208%200%200%201-8%208H48a8%208%200%200%201-8-8V80a8%208%200%200%201%208-8h72%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E", "x": 2, "y": 0 }, "copy": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%22-8.511%2032.217%20237.615%20237.615%22%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M0%200h256v256H0z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2216%22%20d%3D%22M123.128%20173.402a8%208%200%200%201%206.356-11.604l49.646-2.606a8%208%200%200%200%203.913-14.343L46.96%2045.673a8%208%200%200%200-12.6%206.42l.209%20168.408a8%208%200%200%200%2013.904%205.264l31.289-38.632a8%208%200%200%201%2013.124%201.677l32.943%2064.655a8%208%200%200%200%2010.756%203.495l15.981-8.12a8%208%200%200%200%203.495-10.756Z%22%2F%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M82.4%2020H236v153.6H82.4z%22%2F%3E%3Cpath%20d%3D%22M135.2%2044v28.8h48v48H212V44z%22%20opacity%3D%22.2%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2214.4%22%20d%3D%22M183.2%20120.8H212V44h-76.8v28.8%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2214.4%22%20d%3D%22M106.4%2072.8h76.8v76.8h-76.8z%22%2F%3E%3Cpath%20fill%3D%22none%22%20d%3D%22M82.4%2020H236v153.6H82.4z%22%2F%3E%3Cpath%20fill%3D%22gray%22%20d%3D%22M135.2%2044v28.8h48v48H212V44z%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2214.4%22%20d%3D%22M183.2%20120.8H212V44h-76.8v28.8%22%2F%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2214.4%22%20d%3D%22M106.4%2072.8h76.8v76.8h-76.8z%22%2F%3E%3C%2Fsvg%3E", "x": 2, "y": 0 }, "move": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.994%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22M90.34%2061.66a8%208%200%200%201%200-11.32l32-32a8%208%200%200%201%2011.32%200l32%2032a8%208%200%200%201-11.32%2011.32L136%2043.31V96a8%208%200%200%201-16%200V43.31l-18.34%2018.35a8%208%200%200%201-11.32%200m64%20132.68L136%20212.69V160a8%208%200%200%200-16%200v52.69l-18.34-18.35a8%208%200%200%200-11.32%2011.32l32%2032a8%208%200%200%200%2011.32%200l32-32a8%208%200%200%200-11.32-11.32m83.32-72-32-32a8%208%200%200%200-11.32%2011.32L212.69%20120H160a8%208%200%200%200%200%2016h52.69l-18.35%2018.34a8%208%200%200%200%2011.32%2011.32l32-32a8%208%200%200%200%200-11.32M43.31%20136H96a8%208%200%200%200%200-16H43.31l18.35-18.34a8%208%200%200%200-11.32-11.32l-32%2032a8%208%200%200%200%200%2011.32l32%2032a8%208%200%200%200%2011.32-11.32Z%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "no-drop": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2220%2020%20216%20216%22%3E%3Cpath%20d%3D%22M165.66%20154.34a8%208%200%200%201-11.32%2011.32l-64-64a8%208%200%200%201%2011.32-11.32ZM232%20128A104%20104%200%201%201%20128%2024a104.11%20104.11%200%200%201%20104%20104m-16%200a88%2088%200%201%200-88%2088%2088.1%2088.1%200%200%200%2088-88%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "not-allowed": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2220%2020%20216%20216%22%3E%3Cpath%20d%3D%22M128%2024a104%20104%200%201%200%20104%20104A104.11%20104.11%200%200%200%20128%2024m88%20104a87.56%2087.56%200%200%201-20.41%2056.28L71.72%2060.4A88%2088%200%200%201%20216%20128m-176%200a87.56%2087.56%200%200%201%2020.41-56.28L184.28%20195.6A88%2088%200%200%201%2040%20128%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "grab": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%223.968%2011.987%20232.013%20232.013%22%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M208%2076v76a80%2080%200%200%201-80%2080c-44.18%200-60.75-21.28-93.32-90a20%2020%200%200%201%2034.64-20L88%20152V60a20%2020%200%200%201%2040%200V44a20%2020%200%200%201%2040%200v32a20%2020%200%200%201%2040%200%22%2F%3E%3Cpath%20d%3D%22M188%2048a27.75%2027.75%200%200%200-12%202.71V44a28%2028%200%200%200-54.65-8.6A28%2028%200%200%200%2080%2060v64l-3.82-6.13a28%2028%200%200%200-48.6%2027.82c16%2033.77%2028.93%2057.72%2043.72%2072.69C86.24%20233.54%20103.2%20240%20128%20240a88.1%2088.1%200%200%200%2088-88V76a28%2028%200%200%200-28-28m12%20104a72.08%2072.08%200%200%201-72%2072c-20.38%200-33.51-4.88-45.33-16.85C69.44%20193.74%2057.26%20171%2041.9%20138.58a6%206%200%200%200-.3-.58%2012%2012%200%200%201%2020.79-12%202%202%200%200%200%20.14.23l18.67%2030A8%208%200%200%200%2096%20152V60a12%2012%200%200%201%2024%200v60a8%208%200%200%200%2016%200V44a12%2012%200%200%201%2024%200v76a8%208%200%200%200%2016%200V76a12%2012%200%200%201%2024%200Z%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "grabbing": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2235.998%2059.995%20184.005%20184.005%22%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M208%20108v44a80%2080%200%200%201-160%200v-12a20%2020%200%200%201%2020-20h20V92a20%2020%200%200%201%2040%200%2020%2020%200%200%201%2040%200v16a20%2020%200%200%201%2040%200%22%2F%3E%3Cpath%20d%3D%22M188%2080a27.8%2027.8%200%200%200-13.36%203.4%2028%2028%200%200%200-46.64-11A28%2028%200%200%200%2080%2092v20H68a28%2028%200%200%200-28%2028v12a88%2088%200%200%200%20176%200v-44a28%2028%200%200%200-28-28m12%2072a72%2072%200%200%201-144%200v-12a12%2012%200%200%201%2012-12h12v24a8%208%200%200%200%2016%200V92a12%2012%200%200%201%2024%200v28a8%208%200%200%200%2016%200V92a12%2012%200%200%201%2024%200v28a8%208%200%200%200%2016%200v-12a12%2012%200%200%201%2024%200Z%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "all-scroll": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.994%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22M90.34%2061.66a8%208%200%200%201%200-11.32l32-32a8%208%200%200%201%2011.32%200l32%2032a8%208%200%200%201-11.32%2011.32L136%2043.31V96a8%208%200%200%201-16%200V43.31l-18.34%2018.35a8%208%200%200%201-11.32%200m64%20132.68L136%20212.69V160a8%208%200%200%200-16%200v52.69l-18.34-18.35a8%208%200%200%200-11.32%2011.32l32%2032a8%208%200%200%200%2011.32%200l32-32a8%208%200%200%200-11.32-11.32m83.32-72-32-32a8%208%200%200%200-11.32%2011.32L212.69%20120H160a8%208%200%200%200%200%2016h52.69l-18.35%2018.34a8%208%200%200%200%2011.32%2011.32l32-32a8%208%200%200%200%200-11.32M43.31%20136H96a8%208%200%200%200%200-16H43.31l18.35-18.34a8%208%200%200%200-11.32-11.32l-32%2032a8%208%200%200%200%200%2011.32l32%2032a8%208%200%200%200%2011.32-11.32Z%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "col-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.994%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22m237.66%20133.66-32%2032a8%208%200%200%201-11.32-11.32L212.69%20136H43.31l18.35%2018.34a8%208%200%200%201-11.32%2011.32l-32-32a8%208%200%200%201%200-11.32l32-32a8%208%200%200%201%2011.32%2011.32L43.31%20120h169.38l-18.35-18.34a8%208%200%200%201%2011.32-11.32l32%2032a8%208%200%200%201%200%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "row-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.995%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22M165.66%20194.34a8%208%200%200%201%200%2011.32l-32%2032a8%208%200%200%201-11.32%200l-32-32a8%208%200%200%201%2011.32-11.32L120%20212.69V43.31l-18.34%2018.35a8%208%200%200%201-11.32-11.32l32-32a8%208%200%200%201%2011.32%200l32%2032a8%208%200%200%201-11.32%2011.32L136%2043.31v169.38l18.34-18.35a8%208%200%200%201%2011.32%200%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "n-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2227.998%2027.994%20200.006%20200.006%22%3E%3Cpath%20d%3D%22M205.66%20117.66a8%208%200%200%201-11.32%200L136%2059.31V216a8%208%200%200%201-16%200V59.31l-58.34%2058.35a8%208%200%200%201-11.32-11.32l72-72a8%208%200%200%201%2011.32%200l72%2072a8%208%200%200%201%200%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "e-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2228%2027.997%20200.006%20200.006%22%3E%3Cpath%20d%3D%22m221.66%20133.66-72%2072a8%208%200%200%201-11.32-11.32L196.69%20136H40a8%208%200%200%201%200-16h156.69l-58.35-58.34a8%208%200%200%201%2011.32-11.32l72%2072a8%208%200%200%201%200%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "s-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2227.997%2028%20200.006%20200.006%22%3E%3Cpath%20d%3D%22m205.66%20149.66-72%2072a8%208%200%200%201-11.32%200l-72-72a8%208%200%200%201%2011.32-11.32L120%20196.69V40a8%208%200%200%201%2016%200v156.69l58.34-58.35a8%208%200%200%201%2011.32%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "w-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2227.994%2027.997%20200.006%20200.006%22%3E%3Cpath%20d%3D%22M224%20128a8%208%200%200%201-8%208H59.31l58.35%2058.34a8%208%200%200%201-11.32%2011.32l-72-72a8%208%200%200%201%200-11.32l72-72a8%208%200%200%201%2011.32%2011.32L59.31%20120H216a8%208%200%200%201%208%208%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "ne-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2251.996%2052%20152.004%20152.004%22%3E%3Cpath%20d%3D%22M200%2064v104a8%208%200%200%201-16%200V83.31L69.66%20197.66a8%208%200%200%201-11.32-11.32L172.69%2072H88a8%208%200%200%201%200-16h104a8%208%200%200%201%208%208%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "nw-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2252%2052%20152.006%20152.006%22%3E%3Cpath%20d%3D%22M197.66%20197.66a8%208%200%200%201-11.32%200L72%2083.31V168a8%208%200%200%201-16%200V64a8%208%200%200%201%208-8h104a8%208%200%200%201%200%2016H83.31l114.35%20114.34a8%208%200%200%201%200%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "se-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2251.996%2051.996%20152.004%20152.004%22%3E%3Cpath%20d%3D%22M200%2088v104a8%208%200%200%201-8%208H88a8%208%200%200%201%200-16h84.69L58.34%2069.66a8%208%200%200%201%2011.32-11.32L184%20172.69V88a8%208%200%200%201%2016%200%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "sw-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2252%2051.996%20152.004%20152.004%22%3E%3Cpath%20d%3D%22M197.66%2069.66%2083.31%20184H168a8%208%200%200%201%200%2016H64a8%208%200%200%201-8-8V88a8%208%200%200%201%2016%200v84.69L186.34%2058.34a8%208%200%200%201%2011.32%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "ew-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.994%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22m237.66%20133.66-32%2032a8%208%200%200%201-11.32-11.32L212.69%20136H43.31l18.35%2018.34a8%208%200%200%201-11.32%2011.32l-32-32a8%208%200%200%201%200-11.32l32-32a8%208%200%200%201%2011.32%2011.32L43.31%20120h169.38l-18.35-18.34a8%208%200%200%201%2011.32-11.32l32%2032a8%208%200%200%201%200%2011.32%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "ns-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.995%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22M165.66%20194.34a8%208%200%200%201%200%2011.32l-32%2032a8%208%200%200%201-11.32%200l-32-32a8%208%200%200%201%2011.32-11.32L120%20212.69V43.31l-18.34%2018.35a8%208%200%200%201-11.32-11.32l32-32a8%208%200%200%201%2011.32%200l32%2032a8%208%200%200%201-11.32%2011.32L136%2043.31v169.38l18.34-18.35a8%208%200%200%201%2011.32%200%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "nesw-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.995%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22M107.72%20201.538a8%208%200%200%201-8.004%208.005H54.461a8%208%200%200%201-8.004-8.005v-45.254a8.004%208.004%200%200%201%2016.009%200l-.007%2025.943%20119.77-119.77-25.944.008a8.004%208.004%200%200%201%200-16.01h45.254a8%208%200%200%201%208.005%208.005v45.255a8.004%208.004%200%200%201-16.01%200l.008-25.944-119.77%20119.77%2025.944-.007a8%208%200%200%201%208.004%208.004%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "nwse-resize": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2211.995%2011.994%20232.013%20232.013%22%3E%3Cpath%20d%3D%22M201.54%20148.28a8%208%200%200%201%208.004%208.005v45.255a8%208%200%200%201-8.005%208.004h-45.254a8.004%208.004%200%200%201%200-16.009l25.943.007-119.77-119.77.008%2025.944a8.004%208.004%200%200%201-16.01%200V54.462a8%208%200%200%201%208.005-8.005h45.255a8.004%208.004%200%200%201%200%2016.009l-25.944-.007%20119.77%20119.77-.007-25.944a8%208%200%200%201%208.004-8.005%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "zoom-in": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2219.611%2019.581%20216.424%20216.424%22%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M192%20112a80%2080%200%201%201-80-80%2080%2080%200%200%201%2080%2080%22%2F%3E%3Cpath%20d%3D%22m229.66%20218.34-50.06-50.06a88.21%2088.21%200%201%200-11.32%2011.31l50.06%2050.07a8%208%200%200%200%2011.32-11.32M40%20112a72%2072%200%201%201%2072%2072%2072.08%2072.08%200%200%201-72-72m112%200a8%208%200%200%201-8%208h-24v24a8%208%200%200%201-16%200v-24H80a8%208%200%200%201%200-16h24V80a8%208%200%200%201%2016%200v24h24a8%208%200%200%201%208%208%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 }, "zoom-out": { "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%2219.611%2019.581%20216.424%20216.424%22%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M192%20112a80%2080%200%201%201-80-80%2080%2080%200%200%201%2080%2080%22%2F%3E%3Cpath%20d%3D%22m229.66%20218.34-50.06-50.06a88.21%2088.21%200%201%200-11.32%2011.31l50.06%2050.07a8%208%200%200%200%2011.32-11.32M40%20112a72%2072%200%201%201%2072%2072%2072.08%2072.08%200%200%201-72-72m112%200a8%208%200%200%201-8%208H80a8%208%200%200%201%200-16h64a8%208%200%200%201%208%208%22%2F%3E%3C%2Fsvg%3E", "x": 8, "y": 8 } });
+    //#endregion
 
     constructor() {
       /** @type {IDBDatabase | null} */
@@ -2380,6 +2396,9 @@
 
       /** @type {string | null} */
       this.selectedId = null;
+
+      /** @type {string} */
+      this.searchQuery = '';
 
       this._cursor.pointerMove({ x: -500, y: -500 });
 
@@ -2489,8 +2508,7 @@
 
         await this._add(entry);
         this.replays = await this._loadAll();
-        this.selectedId = this.replays[0].id;
-        this._renderList();
+        this._renderList(this.replays[0].id);
       }
     }
 
@@ -2545,6 +2563,9 @@
               <button data-act="ghost-opponent">ghost: opponent</button>
             </div>
           </div>
+          <div class="rc-search">
+            <input type="text" placeholder="Search..." />
+          </div>
           <div class="rc-list"></div>
         </div>
       `;
@@ -2554,12 +2575,31 @@
         el.classList.toggle('is-collapsed');
       });
 
+      /** @type {HTMLInputElement} */
+      const input = assert(this.root.querySelector('.rc-search input'));
+
+      input.addEventListener('input', () => {
+        this.searchQuery = input.value.trim().toLowerCase();
+        this._renderList();
+      });
+
       document.body.appendChild(el);
 
       this._wireUI(el);
       this._startTimeUpdates();
 
       return el;
+    }
+
+    /**
+     * @param {ReplayEntry[]} results
+     * @returns {ReplayEntry[]}
+     */
+    _filterResults(results) {
+      const q = this.searchQuery;
+      if (!q) return results;
+
+      return searchReplays(this.searchQuery, results);
     }
 
     /**
@@ -2595,12 +2635,11 @@
 
         await this._add(entry);
         this.replays = await this._loadAll();
-        this.selectedId = this.replays[0].id;
-        this._renderList();
+        this._renderList(this.replays[0].id);
       });
     }
 
-    _renderList() {
+    _renderList(selectId = this.selectedId) {
       this.listEl.innerHTML = '';
 
       if (!this.replays.length) {
@@ -2611,8 +2650,15 @@
         return;
       }
 
-      if (this.selectedId == null) {
+      const resultList = this._filterResults(this.replays);
+      if (selectId == null) {
         this.selectedId = this.replays[0].id;
+      }
+      if (selectId && selectId !== this.selectedId) {
+        for (const entry of resultList) {
+          if (entry.id === selectId)
+            this.selectedId = selectId;
+        }
       }
 
       for (const r of this.replays) {
@@ -2659,8 +2705,7 @@
         `;
 
         el.onclick = () => {
-          this.selectedId = r.id;
-          this._renderList();
+          this._renderList(r.id);
         };
 
         this.listEl.appendChild(el);
@@ -2824,8 +2869,7 @@
 
       await this._delete(r.id);
       this.replays = await this._loadAll();
-      this.selectedId = null;
-      this._renderList();
+      this._renderList(null);
     }
 
     _exportSelected() {
@@ -2863,8 +2907,9 @@
         }
         this.replays = await this._loadAll();
         if (id)
-          this.selectedId = id;
-        this._renderList();
+          this._renderList(id);
+        else
+          this._renderList();
       };
 
       input.click();
@@ -2885,6 +2930,120 @@
         loop();
       });
     }
+  }
+
+  /**
+ * @param {string} query
+ * @param {ReplayEntry[]} list
+ */
+  function searchReplays(query, list) {
+    const parts = query
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!parts.length) return list;
+
+    return list
+      .map(r => {
+        /** @type {Map<string, [weight: number, text: string]>} */
+        const fields = new Map([
+          ['name', [1.0, r.data.opponentName]],
+          ['elo', [0.8, r.data.opponentElo != null ? String(r.data.opponentElo) : '']],
+          ['result', [0.6, ['unknown', 'win', 'loss'][r.result]]],
+          ['short', [0.6, ['?', 'w', 'l'][r.result]]],
+        ]);
+
+        let totalScore = 0;
+        let matchedParts = 0;
+
+        for (const part of parts) {
+          let best = 0;
+
+          for (const [key, [weight, text]] of fields) {
+            const dist = fuzzySubstring(part, text);
+            const qLen = part.length;
+
+            const quality = Math.max(0, 1 - dist / qLen);
+
+            const weighted = quality * weight;
+
+            if (weighted > best) best = weighted;
+          }
+
+          if (best > 0.2) {
+            totalScore += best;
+            matchedParts++;
+          }
+        }
+
+        // normalize score
+        const score = matchedParts ? totalScore / parts.length : 0;
+
+        return {
+          r,
+          score,
+          date: r.ts
+        };
+      })
+      .filter(x => x.score > 0.2)
+      .sort((a, b) => {
+        // strong match wins
+        if (Math.abs(a.score - b.score) > 0.25) {
+          return b.score - a.score;
+        }
+        // otherwise chronological
+        return b.date - a.date;
+      })
+      .map(x => x.r);
+  }
+
+  /**
+   * Performs a fuzzy substring match that ignores accents and case.
+   * Returns the minimum edit distance (lower is better).
+   * @param {string} needle
+   * @param {string} haystack
+   * @returns {number}
+   */
+  function fuzzySubstring(needle, haystack) {
+    // 1. Clean strings: Strip diacritics, lowercase, and trim
+    /** @param {string} s */
+    const clean = (s) => s.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+    const s1 = clean(needle);
+    const s2 = clean(haystack);
+
+    const n = s1.length;
+    const h = s2.length;
+
+    if (n === 0) return 0;
+    if (h === 0) return n;
+
+    // 2. Initialize DP Matrix
+    // We initialize the first row with 0s to allow the match to start 
+    // anywhere in the haystack for "free" (substring matching).
+    let rows = Array.from({ length: n + 1 }, (_, i) => [i]);
+    for (let j = 0; j <= h; j++) rows[0][j] = 0;
+
+    // 3. Fill Matrix using Levenshtein logic
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= h; j++) {
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        rows[i][j] = Math.min(
+          rows[i - 1][j] + 1,      // deletion
+          rows[i][j - 1] + 1,      // insertion
+          rows[i - 1][j - 1] + cost // substitution
+        );
+      }
+    }
+
+    // 4. Result is the minimum value in the last row
+    // This represents the best match found anywhere in the haystack.
+    return Math.min(...rows[n]);
   }
 
   //#region Sort Generator Widget
