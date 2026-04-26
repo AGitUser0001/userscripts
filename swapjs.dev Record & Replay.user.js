@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.3
+// @version     1.5.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -905,13 +905,38 @@
      * @param {number} index
      * @returns {{ x: number, y: number }}
      */
-    _getSnapPos(index) {
+    _getDropPos(index) {
       const rect = this.arena.getBoundingClientRect();
 
       const x = rect.left + (index * this.step + this.barWidth / 2);
 
       const minY = rect.top + rect.height * 0.2;
       const maxY = rect.bottom - rect.height * 0.1;
+      const y = Math.max(minY, Math.min(maxY, this.cursor.y));
+
+      return { x, y };
+    }
+
+    /**
+     * @param {number} index
+     * @param {HTMLElement} barEl
+     * @returns {{ x: number, y: number }}
+     */
+    _getSnapPos(index, barEl) {
+      const rect = this.arena.getBoundingClientRect();
+
+      // X remains mathematically locked to the center of the bar's column
+      const x = rect.left + (index * this.step + this.barWidth / 2);
+
+      const barHeight = barEl.offsetHeight;
+
+      // Since bars grow from the bottom up, the logical top is the arena's bottom minus the bar's height.
+      // We add a 6px padding so the cursor doesn't visually clip over the absolute edge.
+      const paddingY = 6;
+      const minY = rect.bottom - barHeight + paddingY;
+      const maxY = rect.bottom - paddingY;
+
+      // Clamp the current cursor Y to strictly fall within this bar's physical bounds
       const y = Math.max(minY, Math.min(maxY, this.cursor.y));
 
       return { x, y };
@@ -1089,13 +1114,13 @@
       }
 
       if ('d' in e) {
-        const pos = this._getSnapPos(e.d);
+        const pos = this._getSnapPos(e.d, this.bars[e.d]);
         this.cursor.pointerMove(pos);
         this.cursor.pointerDown();
       }
 
       if ('u' in e) {
-        const pos = this._getSnapPos(e.u);
+        const pos = this._getDropPos(e.u);
         this.cursor.pointerMove(pos);
         this.cursor.pointerUp();
       }
