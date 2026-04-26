@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.10
+// @version     1.5.10.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -711,12 +711,6 @@
 
       /** @type {OpponentEvent[]} */
       this._opponentEvents = data.opponent.slice().sort((a, b) => a.t - b.t);
-
-      if (this.data.matchLength == undefined) {
-        let lastEventTime = this._events.at(-1)?.t || 0;
-        let lastOppTime = this._opponentEvents.at(-1)?.t || 0;
-        this.data.matchLength = Math.max(lastEventTime, lastOppTime);
-      }
 
       this._startOrder = this.data.startOrder.slice();
       this._opponentStartOrder = this.data.opponentStartOrder.slice();
@@ -2409,9 +2403,22 @@
       const store = tx.objectStore('replays');
 
       return new Promise((res, rej) => {
+        /** @type {IDBRequest<ReplayEntry[]>} */
         const req = store.getAll();
         req.onsuccess = () => {
           const arr = req.result.sort((a, b) => b.ts - a.ts);
+          for (const entry of arr) {
+            if (!entry.data.matchLength) {
+              let matchLength = 0;
+              for (const e of entry.data.events) {
+                if (e.t > matchLength) matchLength = e.t;
+              }
+              for (const e of entry.data.opponent) {
+                if (e.t > matchLength) matchLength = e.t;
+              }
+              entry.data.matchLength = matchLength;
+            }
+          }
           res(arr);
         };
         req.onerror = () => rej(req.error);   // specific failure
