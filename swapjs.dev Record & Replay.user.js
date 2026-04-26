@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.6
+// @version     1.5.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -28,7 +28,8 @@
    *   opponentName: string,
    *   opponentNameClass: string | null,
    *   playerElo: number | null,
-   *   opponentElo: number | null
+   *   opponentElo: number | null,
+   *   matchLength: number
    * }} SwapRecording
    */
 
@@ -187,7 +188,8 @@
         opponentName: 'opponent',
         opponentNameClass: null,
         playerElo: null,
-        opponentElo: null
+        opponentElo: null,
+        matchLength: 0
       };
 
       /** @type {HTMLElement | null} */
@@ -403,6 +405,8 @@
       window.removeEventListener('pointerdown', this._onDown, true);
       window.removeEventListener('pointerup', this._onUp, true);
 
+      this.data.matchLength = this._time();
+
       if (this._observer) {
         this._observer.disconnect();
         this._observer = null;
@@ -430,7 +434,8 @@
         opponentName: this.data.opponentName,
         opponentNameClass: this.data.opponentNameClass,
         playerElo: this.data.playerElo,
-        opponentElo: this.data.opponentElo
+        opponentElo: this.data.opponentElo,
+        matchLength: this.data.matchLength
       };
     }
 
@@ -612,6 +617,12 @@
       this.opponentMovesEl = this.root.querySelector('.match-head .vs-side.right .vs-moves');
 
       let { opponentName, playerName, opponentNameClass, playerNameClass, playerElo, opponentElo } = this.data;
+      if (this.data.matchLength == undefined) {
+        let lastEventTime = this._events.at(-1)?.t || 0;
+        let lastOppTime = this._opponentEvents.at(-1)?.t || 0;
+        this.data.matchLength = Math.max(lastEventTime, lastOppTime);
+      }
+
       if (mode === 'ghost-player') {
         opponentName = playerName;
         opponentNameClass = playerNameClass;
@@ -706,6 +717,10 @@
       if (mode === 'ghost-player') {
         this._opponentEvents = this._convertPlayerToOpponent();
         this._opponentStartOrder = this._startOrder.slice();
+      }
+
+      if (mode.startsWith('ghost-')) {
+        this._events = [];
       }
 
       this._onResize = this._onResize.bind(this);
@@ -1020,8 +1035,13 @@
           playerMs = frozenPlayerMs;
         else {
           playerMs = elapsed;
-          if (this._isSorted())
-            frozenPlayerMs = playerMs;
+          if (this.mode === 'replay') {
+            if (elapsed > this.data.matchLength)
+              frozenPlayerMs = elapsed;
+          } else if (this.mode.startsWith('ghost-')) {
+            if (this._isSorted())
+              frozenPlayerMs = playerMs;
+          }
         }
 
         let opponentMs;
@@ -1029,7 +1049,7 @@
           opponentMs = frozenOppMs;
         else {
           opponentMs = elapsed;
-          if (this._stopOpponentTimer || this._oppIsSorted())
+          if (elapsed > this.data.matchLength)
             frozenOppMs = opponentMs;
         }
 
@@ -1111,8 +1131,7 @@
 
         // process player events up to current time
         while (pevent < this._events.length && this._events[pevent].t <= elapsed) {
-          if (this.mode === 'replay')
-            this._handle(this._events[pevent]);
+          this._handle(this._events[pevent]);
           pevent++;
         }
 
@@ -1127,12 +1146,6 @@
           oevent >= this._opponentEvents.length;
 
         if (done) break;
-      }
-
-      if (this.mode === 'replay') {
-        this._stopUiTimer();
-      } else {
-        this._stopOpponentTimer = true;
       }
     }
 
@@ -3252,7 +3265,7 @@
 
       /** @type {RecordedEvent[]} */
       const events = [];
-      let currentTime = delay;
+      let currentTime = moveSequence.length > 0 ? delay : 0;
       let currentState = [...startOrder];
 
       /** @type {OpponentEvent[]} */
@@ -3336,7 +3349,8 @@
         opponentName: `${this.selectedAlgo} ${delay}ms`,
         opponentNameClass: nameClass,
         playerElo: null,
-        opponentElo: null
+        opponentElo: null,
+        matchLength: currentTime
       };
 
       this.callback(recording);
