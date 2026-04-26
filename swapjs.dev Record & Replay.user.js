@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.7
+// @version     1.6.8
 // @author      auser0001
 // ==/UserScript==
 
@@ -2960,6 +2960,14 @@
         let totalScore = 0;
         let matchedParts = 0;
 
+        for (const [_key, [weight, text]] of fields) {
+          const dist = fuzzySubstring(query, text);
+          let score = Math.max(0, 1 - dist);
+          if (text.includes(query))
+            score += 0.2;
+          if (score > totalScore) totalScore = score;
+        }
+
         for (const part of parts) {
           let score = 0;
 
@@ -2971,7 +2979,7 @@
             // Tokens
             for (const token of tokens) {
               const dist = fuzzySubstring(part, token);
-              bestLocal = Math.max(bestLocal, 1 - dist / part.length);
+              bestLocal = Math.max(bestLocal, 1 - dist);
             }
 
             let bonus = 0;
@@ -2986,7 +2994,7 @@
                   if (i >= token.length) break;
                   const slice = token.slice(0, i);
                   const dist = fuzzySubstring(part, slice);
-                  const score = 1 - dist / i;
+                  const score = 1 - dist;
                   if (score > prefixBest) prefixBest = score;
                 }
               }
@@ -3000,14 +3008,14 @@
             if (weighted > score) score = weighted;
           }
 
-          if (score > 0.4) {
+          if (score > 0.3) {
             totalScore += score;
             matchedParts++;
           }
         }
 
         // normalize score
-        const score = matchedParts ? totalScore / parts.length : 0;
+        const score = totalScore * ((matchedParts + 1) / (parts.length + 1));
 
         return {
           r,
