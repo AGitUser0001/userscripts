@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.9.2
+// @version     1.5.10
 // @author      auser0001
 // ==/UserScript==
 
@@ -2237,6 +2237,12 @@
       line-height: 1.2;
     }
 
+    .rc-elo {
+      margin-left: 6px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
     /* --- Result badge --- */
     .rc-result {
       font-size: 11px;
@@ -2260,9 +2266,11 @@
     .rc-item-sub {
       font-size: 11px;
       color: var(--muted);
+      display: flex;
+      justify-content: space-between;
     }
 
-    .rc-time {
+    .rc-time, .rc-duration {
       font-variant-numeric: tabular-nums;
     }
 
@@ -2592,7 +2600,6 @@
         return;
       }
 
-      // Ensure one default selection
       if (this.selectedId == null) {
         this.selectedId = this.replays[0].id;
       }
@@ -2610,14 +2617,32 @@
         const resultLabel = ['?', 'W', 'L'][r.result];
         const resultClass = ['is-unknown', 'is-win', 'is-loss'][r.result];
 
+        const opponentClass = r.data.opponentNameClass || '';
+
+        const elo = r.data.opponentElo;
+
+        const eloHtml = elo != null
+          ? `<span class="rc-elo">${elo}</span>`
+          : '';
+
         el.innerHTML = `
           <div class="rc-item-main">
-            <span class="rc-opponent">${r.data.opponentName}</span>
-            <span class="rc-result ${resultClass}">${resultLabel}</span>
+            <span class="rc-opponent ${opponentClass} ${svClass}">
+              ${r.data.opponentName}
+              ${eloHtml}
+            </span>
+            <span class="rc-result ${resultClass}">
+              ${resultLabel}
+            </span>
           </div>
           <div class="rc-item-sub">
-            <span class="rc-time" data-ts="${time.getTime()}" title="${time.toLocaleString()}">
+            <span class="rc-time"
+                  data-ts="${time.getTime()}"
+                  title="${time.toLocaleString()}">
               ${this._formatTime(time)}
+            </span>
+            <span class="rc-duration">
+              ${this._formatDuration(r.data.matchLength)}
             </span>
           </div>
         `;
@@ -2631,9 +2656,49 @@
       }
     }
 
-    _df = new Intl.DurationFormat(undefined, {
-      style: 'narrow'
-    })
+    /**
+     * @param {number} ms
+     * @returns {string}
+     */
+    _formatDuration(ms) {
+      const s = Math.floor(ms / 1000);
+      const fractional = Math.floor(ms % 1000);
+      
+      // < 1 minute → seconds
+      if (s < 60) {
+        return this._dfn.format({
+          seconds: s,
+          milliseconds: fractional
+        });
+      }
+
+      // < 1 hour → m + s
+      if (s < 3600) {
+        return this._dfd.format({
+          minutes: Math.floor(s / 60),
+          seconds: s % 60,
+          milliseconds: fractional
+        });
+      }
+
+      return this._dfd.format({
+        hours: Math.floor(s / 3600),
+        minutes: Math.floor((s % 3600) / 60),
+        seconds: s % 60,
+        milliseconds: fractional
+      });
+    }
+
+    _dfd = new Intl.DurationFormat(undefined, {
+      style: 'digital',
+      milliseconds: 'numeric'
+    });
+
+    _dfn = new Intl.DurationFormat(undefined, {
+      style: 'narrow',
+      milliseconds: 'numeric'
+    });
+
     /**
      * @param {Date} date 
      * @returns {string}
@@ -2644,7 +2709,7 @@
 
       const totalSec = Math.floor(diffMs / 1000);
 
-      const df = this._df;
+      const df = this._dfn;
 
       // < 20 seconds → now
       if (totalSec < 20) {
