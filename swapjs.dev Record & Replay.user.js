@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.4
+// @version     1.6.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -3033,10 +3033,11 @@
     // 3. Fill Matrix using Levenshtein logic
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= h; j++) {
-        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        // more cost for substitution
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 3;
         rows[i][j] = Math.min(
-          rows[i - 1][j] + 1,      // deletion
-          rows[i][j - 1] + 1,      // insertion
+          rows[i - 1][j] + 2,      // deletion
+          rows[i][j - 1] + 2,      // insertion
           rows[i - 1][j - 1] + cost // substitution
         );
       }
@@ -3044,7 +3045,14 @@
 
     // 4. Result is the minimum value in the last row
     // This represents the best match found anywhere in the haystack.
-    return Math.min(...rows[n]);
+    let score = Math.min(...rows[n]);
+
+    // reward exact matches
+    if (s2.includes(s1)) {
+      score -= 2; // bonus
+    }
+
+    return score;
   }
 
   //#region Sort Generator Widget
