@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.5.7.1
+// @version     1.5.7.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -782,6 +782,12 @@
       if (!(root instanceof HTMLElement)) {
         throw new Error('Replay HTML did not produce a root element');
       }
+
+      this._tab.textContent = {
+        'replay': 'replay',
+        'ghost-player': 'ghost: player',
+        'ghost-opponent': 'ghost: opponent'
+      }[this.mode];
 
       this._originalActiveTab.classList.remove('active');
       this._originalActiveTab.addEventListener('click', this._tabClickListener, { capture: true });
