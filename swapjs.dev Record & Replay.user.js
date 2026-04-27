@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.25
+// @version     2026.04.27.4.39
 // @author      auser0001
 // ==/UserScript==
 
@@ -2387,18 +2387,17 @@
 
     .rc-tool-root {
       position: relative;
+      width: 100%;
     }
 
     /* hidden by default */
     .rc-tool-list {
       position: absolute;
-      top: calc(100% + 8px);
+      top: 100%;
       left: 0;
       right: 0;
 
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 10px;
       box-shadow: 0 8px 24px #00000033;
 
       max-height: 220px;
@@ -2420,7 +2419,7 @@
     }
 
     /* items */
-    .rc-tool-list button {
+    .rc-tool-list button:not(:first-of-type, :last-of-type) {
       border-radius: 0;
     }
   `);
