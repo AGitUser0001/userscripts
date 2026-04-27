@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.8
+// @version     1.7.10.9
 // @author      auser0001
 // ==/UserScript==
 
@@ -2151,6 +2151,13 @@
       border: 1px solid var(--dark);
     }
 
+    .rc-actions button:disabled {
+      background: var(--empty);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      cursor: not-allowed;
+    }
+
     .rc-actions button[data-act="delete"]:hover:not(:disabled) {
       color: #b8432e;
       border-color: rgba(184, 67, 46, 0.3);
@@ -2694,28 +2701,39 @@
     /** @type {ReplayEntry[]} */
     resultList = [];
 
+    /** 
+     * @param {string} text
+     * @param {NodeListOf<HTMLButtonElement>} replayBtns
+     */
+    _emptyList(text, replayBtns) {
+      this.selectedId = null;
+      replayBtns.forEach(b => b.disabled = true);
+      const empty = document.createElement('div');
+      empty.className = 'rc-empty';
+      empty.textContent = 'No replays yet';
+      this.listEl.appendChild(empty);
+    }
+
     _renderList(selectId = this.selectedId) {
       this.listEl.innerHTML = '';
 
+      /** @type {NodeListOf<HTMLButtonElement>} */
+      const replayBtns = this.root.querySelectorAll(
+        'button[data-act="replay"], button[data-act="ghost-player"], button[data-act="ghost-opponent"]'
+      );
+
       if (!this.replays.length) {
-        this.selectedId = null;
-        const empty = document.createElement('div');
-        empty.className = 'rc-empty';
-        empty.textContent = 'No replays yet';
-        this.listEl.appendChild(empty);
+        this._emptyList('No replays yet', replayBtns);
         return;
       }
 
       this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
 
       if (!this.resultList.length) {
-        this.selectedId = null;
-        const empty = document.createElement('div');
-        empty.className = 'rc-empty';
-        empty.textContent = 'No results';
-        this.listEl.appendChild(empty);
+        this._emptyList('No results', replayBtns);
         return;
       }
+      replayBtns.forEach(b => b.disabled = false);
 
       if (selectId == null) {
         this.selectedId = this.resultList[0].id;
