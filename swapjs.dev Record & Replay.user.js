@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.10.1
+// @version     1.7.10.10.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -2714,7 +2714,7 @@
       this.selectionControls.forEach(b => b.disabled = true);
       const empty = document.createElement('div');
       empty.className = 'rc-empty';
-      empty.textContent = 'No replays yet';
+      empty.textContent = text;
       this.listEl.appendChild(empty);
     }
 
