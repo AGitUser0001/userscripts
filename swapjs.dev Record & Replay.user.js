@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.7
+// @version     1.7.7.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2106,7 +2106,7 @@
       font-size: 10px;
       cursor: pointer;
       padding: 4px;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s, margin-right 0.5s;
       margin-left: auto;
     }
 
@@ -2353,6 +2353,7 @@
 
       .rc-root.is-collapsed .rc-toggle-btn {
         transform: scale(2);
+        margin-right: auto;
       }
     }
   `);
