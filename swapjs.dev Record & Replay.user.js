@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.44
+// @version     2026.04.27.4.49
 // @author      auser0001
 // ==/UserScript==
 
@@ -2694,6 +2694,15 @@
         if (searchField.value !== this.searchQuery)
           searchField.value = this.searchQuery;
       });
+
+      document.addEventListener('pointerdown', e => {
+        const root = this.root.querySelector('.rc-tool-root');
+        if (!root) return;
+
+        if (!(e.target instanceof Element) || !root.contains(e.target)) {
+          root.classList.remove('is-open');
+        }
+      }, { capture: true });
 
       document.body.appendChild(el);
 
