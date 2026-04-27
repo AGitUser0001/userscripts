@@ -4093,8 +4093,28 @@
      * @returns {number[]}
      */
     _generateRandomSeed(length) {
-      const arr = Array.from({ length }, () => Math.floor(Math.random() * 99) + 1);
-      return [...new Set(arr)].length === length ? arr : this._generateRandomSeed(length);
+      const baseMin = 5;
+      const baseMax = 100;
+
+      // Scale factor
+      const scale = Math.ceil(length / (baseMax - baseMin));
+
+      const min = baseMin * scale;
+      const max = baseMax * scale;
+
+      const set = new Set();
+      const arr = [];
+
+      while (arr.length < length) {
+        const v = Math.floor(Math.random() * (max - min)) + min;
+
+        if (!set.has(v)) {
+          set.add(v);
+          arr.push(v);
+        }
+      }
+
+      return arr;
     }
 
     /**
@@ -4363,10 +4383,28 @@
      * @returns {number[]}
      */
     _generateRandomSeed(length) {
-      const arr = Array.from({ length }, () => Math.floor(Math.random() * 99) + 1);
-      return [...new Set(arr)].length === length
-        ? arr
-        : this._generateRandomSeed(length);
+      const baseMin = 5;
+      const baseMax = 100;
+
+      // Scale factor
+      const scale = Math.ceil(length / (baseMax - baseMin));
+
+      const min = baseMin * scale;
+      const max = baseMax * scale;
+
+      const set = new Set();
+      const arr = [];
+
+      while (arr.length < length) {
+        const v = Math.floor(Math.random() * (max - min)) + min;
+
+        if (!set.has(v)) {
+          set.add(v);
+          arr.push(v);
+        }
+      }
+
+      return arr;
     }
   }
   //#endregion
