@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.6.1
+// @version     1.7.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -2107,6 +2107,7 @@
       cursor: pointer;
       padding: 4px;
       transition: transform 0.2s ease;
+      margin-left: auto;
     }
 
     /* --- Actions --- */
@@ -2344,11 +2345,10 @@
       .rc-root.is-collapsed {
         width: 50px;
         padding: 15px;
-        border-radius: 12px;
       }
 
       .rc-root.is-collapsed .rc-title {
-        visibility: hidden;
+        display: none;
       }
 
       .rc-root.is-collapsed .rc-toggle-btn {
