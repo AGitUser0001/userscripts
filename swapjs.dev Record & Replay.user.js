@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.9.1
+// @version     1.7.9.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -2342,8 +2342,7 @@
     /* --- Mobile --- */
     @media (max-width: 600px) {
       .rc-root.is-collapsed {
-        width: 50px;
-        padding: 15px;
+        width: 60px;
       }
 
       .rc-root.is-collapsed .rc-title {
