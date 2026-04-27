@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.6
+// @version     1.7.10.7
 // @author      auser0001
 // ==/UserScript==
 
@@ -2706,8 +2706,17 @@
       }
 
       this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
+
+      if (!this.resultList.length) {
+        const empty = document.createElement('div');
+        empty.className = 'rc-empty';
+        empty.textContent = 'No results';
+        this.listEl.appendChild(empty);
+        return;
+      }
+
       if (selectId == null) {
-        this.selectedId = this.replays[0].id;
+        this.selectedId = this.resultList[0].id;
       }
       if (selectId && selectId !== this.selectedId) {
         for (const entry of this.resultList) {
