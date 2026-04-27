@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.03
+// @version     2026.04.27.4.04
 // @author      auser0001
 // ==/UserScript==
 
@@ -3766,9 +3766,10 @@
               delayInput.style.borderColor = '#b8432e';
               delayErr.style.display = 'block';
             } else {
+              errs.delete('delayInput');
+              widget.updateAction('Generate Replay');
               delayInput.style.borderColor = '';
               delayErr.style.display = 'none';
-              errs.delete('delayInput');
             }
           };
 
