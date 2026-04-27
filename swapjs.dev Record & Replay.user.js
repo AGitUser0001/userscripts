@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.10.2
+// @version     2026.04.27.3.52
 // @author      auser0001
 // ==/UserScript==
 
@@ -3234,22 +3234,23 @@
     return Math.min(...rows[n]) / n;
   }
 
-  //#region Sort Generator Widget
-  const sortGenerationStyles = `
-    .sg-scrim {
+  //#region Base Widget
+  const widgetStyles = `
+    /* === Overlay / Scrim === */
+    .w-scrim {
       position: fixed;
-      top: 0; right: 0; bottom: 0; left: 0;
+      inset: 0;
       background: #1613168c;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 999999;
       padding: 24px;
-      -webkit-backdrop-filter: blur(4px);
       backdrop-filter: blur(4px);
     }
 
-    .sg-modal {
+    /* === Modal Container === */
+    .w-modal {
       background: var(--card);
       border-radius: 20px;
       padding: 32px;
@@ -3259,7 +3260,8 @@
       font-family: inherit;
     }
 
-    .sg-modal h2 {
+    /* === Headings === */
+    .w-title {
       font-size: 22px;
       font-weight: 700;
       margin: 0 0 6px;
@@ -3267,21 +3269,23 @@
       color: var(--dark);
     }
 
-    .sg-sub {
+    .w-sub {
       color: var(--muted);
       font-size: 13px;
       line-height: 1.5;
       margin: 0 0 20px;
     }
 
-    .sg-choose-grid {
+    /* === Layout === */
+    .w-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-bottom: 20px;
     }
 
-    .sg-choose-btn {
+    /* === Selectable Cards === */
+    .w-option {
       background: var(--empty);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -3294,28 +3298,30 @@
       transition: border-color .15s, transform .15s;
     }
 
-    .sg-choose-btn:hover, .sg-choose-btn.selected {
+    .w-option:hover,
+    .w-option.is-selected {
       border-color: var(--accent);
       transform: translateY(-2px);
     }
 
-    .sg-choose-btn.selected {
+    .w-option.is-selected {
       background: var(--bg);
       box-shadow: 0 4px 12px #16131614;
     }
 
-    .sg-choose-btn strong {
+    .w-option-title {
       color: var(--dark);
       font-size: 14px;
       font-weight: 600;
     }
 
-    .sg-choose-btn span {
+    .w-option-sub {
       color: var(--muted);
       font-size: 12px;
     }
 
-    .sg-label {
+    /* === Labels === */
+    .w-label {
       display: block;
       font-size: 11px;
       font-weight: 600;
@@ -3325,7 +3331,8 @@
       margin-bottom: 8px;
     }
 
-    .sg-input {
+    /* === Inputs === */
+    .w-input {
       width: 100%;
       padding: 12px 14px;
       border-radius: 10px;
@@ -3337,20 +3344,21 @@
       margin-bottom: 20px;
     }
 
-    .sg-input:focus {
+    .w-input:focus {
       outline: 2px solid var(--accent);
-      outline-offset: 0;
       border-color: transparent;
     }
 
-    .sg-actions {
+    /* === Actions === */
+    .w-actions {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
       margin-top: 10px;
     }
 
-    .sg-primary-btn {
+    /* === Buttons === */
+    .w-btn-primary {
       background: var(--dark);
       color: var(--bg);
       padding: 11px 22px;
@@ -3362,16 +3370,16 @@
       transition: transform .12s, opacity .15s;
     }
 
-    .sg-primary-btn:hover:not(:disabled) {
+    .w-btn-primary:hover:not(:disabled) {
       transform: translateY(-1px);
     }
 
-    .sg-primary-btn:disabled {
+    .w-btn-primary:disabled {
       opacity: .4;
       cursor: not-allowed;
     }
 
-    .sg-secondary-btn {
+    .w-btn-secondary {
       background: none;
       color: var(--muted);
       padding: 11px 18px;
@@ -3381,15 +3389,141 @@
       cursor: pointer;
     }
 
-    .sg-secondary-btn:hover {
+    .w-btn-secondary:hover {
       color: var(--dark);
     }
   `;
 
-  const sgStyleSheet = new CSSStyleSheet();
-  sgStyleSheet.replaceSync(sortGenerationStyles);
-  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sgStyleSheet];
 
+  const widgetStyleSheet = new CSSStyleSheet();
+  widgetStyleSheet.replaceSync(widgetStyles);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, widgetStyleSheet];
+
+  /**
+   * @typedef {{
+   *   label: string,
+   *   primary?: boolean,
+   *   disabled?: () => boolean,
+   *   onClick: (widget: Widget) => void
+   * }} WidgetAction
+   */
+  class Widget {
+    /**
+     * @param {{
+     *   title?: string,
+     *   sub?: string,
+     *   content: (root: HTMLElement, widget: Widget) => void,
+     *   actions?: WidgetAction[]
+     * }} opts
+     */
+    constructor(opts) {
+      this.opts = opts;
+      this.root = document.createElement('div');
+      this.root.className = 'w-scrim';
+
+      this.modal = document.createElement('div');
+      this.modal.className = 'w-modal';
+
+      this.root.appendChild(this.modal);
+
+      // Header
+      if (this.opts.title) {
+        const h = document.createElement('h2');
+        h.className = 'w-title';
+        h.textContent = this.opts.title;
+        this.modal.appendChild(h);
+      }
+
+      if (this.opts.sub) {
+        const p = document.createElement('p');
+        p.className = 'w-sub';
+        p.textContent = this.opts.sub;
+        this.modal.appendChild(p);
+      }
+
+      // Content
+      this.contentEl = document.createElement('div');
+      this.modal.appendChild(this.contentEl);
+
+      this.opts.content(this.contentEl, this);
+
+      // Actions
+      if (this.opts.actions?.length) {
+        const actions = document.createElement('div');
+        actions.className = 'w-actions';
+
+        for (const act of this.opts.actions) {
+          const btn = document.createElement('button');
+
+          btn.className = act.primary
+            ? 'w-btn-primary'
+            : 'w-btn-secondary';
+
+          btn.textContent = act.label;
+          const update = () => {
+            if (act.disabled) {
+              btn.disabled = !!act.disabled();
+            }
+          };
+
+          const aArr = this._actions.get(act.label) || [];
+          aArr.push(update);
+          this._actions.set(act.label, aArr);
+
+          btn.onclick = () => {
+            act.onClick(this);
+            update();
+          };
+
+          update();
+          actions.appendChild(btn);
+        }
+
+        this.modal.appendChild(actions);
+      }
+
+      // Close on background click
+      this.root.addEventListener('pointerdown', e => {
+        if (e.target === this.root) {
+          this.close();
+        }
+      });
+
+      /** @param {KeyboardEvent} e */
+      this._onKey = (e) => {
+        if (e.key === 'Escape') this.close();
+
+        if (e.key === 'Enter') {
+          /** @type {HTMLElement | null} */
+          const primaryBtn = this.root.querySelector('.w-btn-primary');
+          if (primaryBtn) primaryBtn.click();
+        }
+      };
+    }
+    /** @type {Map<string, (() => void)[]>} */
+    _actions = new Map();
+
+    /**
+     * @param {string} label 
+     */
+    updateAction(label) {
+      const aArr = this._actions.get(label) || [];
+      for (const update of aArr) update();
+    };
+
+    open() {
+      document.body.appendChild(this.root);
+      window.addEventListener('keydown', this._onKey);
+    }
+
+    close() {
+      this.root.remove();
+      window.removeEventListener('keydown', this._onKey);
+    }
+  }
+  //#endregion
+
+  //#region Sort Generator Widget
   const forbiddenSort = ['sort', 'ick', 'qu'].reverse().join('');
 
   /**
@@ -3555,116 +3689,227 @@
     }
   };
 
-  class SortGenerationWidget {
+  class SortGenerationWidget extends Widget {
     /**
      * @param {(recording: SwapRecording) => void} callback
      */
     constructor(callback) {
-      this.callback = callback;
-      this.selectedAlgo = '';
-      this.root = this._createDOM();
-      document.body.appendChild(this.root);
-      this._bindEvents();
-    }
+      let selectedAlgo = forbiddenSort;
+      let delay = 450;
+      let seed = '';
+      let canGenerateReplay = true;
 
-    _createDOM() {
-      const el = document.createElement('div');
-      el.className = 'sg-scrim';
-      el.innerHTML = `
-      <div class="sg-modal">
-        <h2>Generate Sort</h2>
-        <p class="sg-sub">Generate a match recording using sorting algorithms.</p>
-        
-        <div class="sg-choose-grid">
-          <button class="sg-choose-btn selected" data-algo="${forbiddenSort}">
-            <strong>${'Q' + forbiddenSort.slice(1)}</strong>
-            <span>Erratic partitions</span>
-          </button>
-          <button class="sg-choose-btn" data-algo="insertion">
-            <strong>Insertion Sort</strong>
-            <span>Linear scanning</span>
-          </button>
-          <button class="sg-choose-btn" data-algo="lis" style="grid-column: span 2;">
-            <strong>LIS Sort</strong>
-            <span>Mathematically perfect efficiency</span>
-          </button>
-        </div>
+      super({
+        title: 'Generate Sort',
+        sub: 'Generate a match recording using sorting algorithms.',
 
-        <label class="sg-label">Base Delay (ms between moves)</label>
-        <input type="number" class="sg-input" id="sg-delay" value="450" min="50" step="50">
+        content: (root, widget) => {
+          // === Algorithm Selection ===
+          const grid = document.createElement('div');
+          grid.className = 'w-grid-2';
 
-        <label class="sg-label">Custom Seed (Optional CSV, exactly 12 numbers)</label>
-        <input type="text" class="sg-input" id="sg-seed" placeholder="e.g. 50, 12, 85, 33... (leave blank for random)">
-        <div id="sg-seed-err" class="sg-sub" style="color: #b8432e; display: none; margin-top: -16px; margin-bottom: 20px;">
-          Seed must contain exactly 12 numeric elements.
-        </div>
+          /**
+           * @param {string} algo
+           * @param {string} title
+           * @param {string} desc
+           */
+          const makeBtn = (algo, title, desc, span2 = false) => {
+            const btn = document.createElement('div');
+            btn.className = 'w-option';
+            if (algo === selectedAlgo) btn.classList.add('is-selected');
+            if (span2) btn.style.gridColumn = 'span 2';
 
-        <div class="sg-actions">
-          <button class="sg-secondary-btn" id="sg-cancel">Cancel</button>
-          <button class="sg-primary-btn" id="sg-generate">Generate Replay</button>
-        </div>
-      </div>
-      `;
-      /** @type {HTMLButtonElement} */
-      const selected = assert(el.querySelector('.sg-choose-btn.selected'));
-      this.selectedAlgo = assert(selected.dataset.algo);
-      return el;
-    }
+            btn.innerHTML = `
+            <div class="w-option-title">${title}</div>
+            <div class="w-option-sub">${desc}</div>
+          `;
 
-    _bindEvents() {
-      // Algo Selection
-      /** @type {NodeListOf<HTMLButtonElement>} */
-      const btns = this.root.querySelectorAll('.sg-choose-btn');
-      btns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          btns.forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          if (!btn.dataset.algo) return;
-          this.selectedAlgo = btn.dataset.algo;
-        });
-      });
+            btn.onclick = () => {
+              selectedAlgo = algo;
+              [...grid.children].forEach(b => b.classList.remove('is-selected'));
+              btn.classList.add('is-selected');
+            };
 
-      /** @type {HTMLInputElement} */
-      const seedInput = assert(this.root.querySelector('#sg-seed'));
-      /** @type {HTMLButtonElement} */
-      const generateBtn = assert(this.root.querySelector('#sg-generate'));
-      /** @type {HTMLElement} */
-      const seedErr = assert(this.root.querySelector('#sg-seed-err'));
+            return btn;
+          };
 
-      // Real-time Seed Validation
-      seedInput.addEventListener('input', () => {
-        const val = seedInput.value.trim();
+          grid.appendChild(makeBtn(forbiddenSort, 'Q' + forbiddenSort.slice(1), 'Erratic partitions'));
+          grid.appendChild(makeBtn('insertion', 'Insertion Sort', 'Linear scanning'));
+          grid.appendChild(makeBtn('lis', 'LIS Sort', 'Mathematically perfect efficiency', true));
 
-        // If empty, it's valid (will fallback to random seed)
-        if (!val) {
-          generateBtn.disabled = false;
-          seedInput.style.borderColor = 'var(--border)';
+          root.appendChild(grid);
+
+          // === Delay Input ===
+          const delayLabel = document.createElement('label');
+          delayLabel.className = 'w-label';
+          delayLabel.textContent = 'Base Delay (ms between moves)';
+
+          const delayInput = document.createElement('input');
+          delayInput.className = 'w-input';
+          delayInput.type = 'number';
+          delayInput.value = '450';
+          delayInput.min = '50';
+          delayInput.step = '50';
+
+          delayInput.oninput = () => {
+            delay = parseInt(delayInput.value, 10);
+          };
+
+          root.appendChild(delayLabel);
+          root.appendChild(delayInput);
+
+          // === Seed Input ===
+          const seedLabel = document.createElement('label');
+          seedLabel.className = 'w-label';
+          seedLabel.textContent = 'Custom Seed (Optional CSV, exactly 12 numbers)';
+
+          const seedInput = document.createElement('input');
+          seedInput.className = 'w-input';
+          seedInput.placeholder = 'e.g. 50, 12, 85, 33...';
+
+          const seedErr = document.createElement('div');
+          seedErr.className = 'w-sub';
+          seedErr.style.color = '#b8432e';
           seedErr.style.display = 'none';
-          return;
-        }
+          seedErr.textContent = 'Seed must contain exactly 12 numeric elements.';
 
-        // Parse and filter valid numbers
-        const parsed = val.split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+          seedInput.oninput = () => {
+            seed = seedInput.value.trim();
 
-        // Check for exactly 12 valid numbers
-        if (parsed.length !== 12) {
-          generateBtn.disabled = true;
-          seedInput.style.borderColor = '#b8432e';
-          seedErr.style.display = 'block';
-        } else {
-          generateBtn.disabled = false;
-          seedInput.style.borderColor = 'var(--accent)'; // Highlight green/accent on success
-          seedErr.style.display = 'none';
-        }
-      });
+            if (!seed) {
+              canGenerateReplay = true;
+              widget.updateAction('Generate Replay');
+              seedInput.style.borderColor = 'var(--border)';
+              seedErr.style.display = 'none';
+              return;
+            }
 
-      // Actions
-      assert(this.root.querySelector('#sg-cancel')).addEventListener('click', () => this.close());
-      assert(this.root.querySelector('#sg-generate')).addEventListener('click', () => this._generate());
+            const hasNaN = seed
+              .split(',')
+              .filter(n => n.trim())
+              .map(n => parseInt(n.trim(), 10))
+              .some(n => isNaN(n));
 
-      // Close on scrim click
-      this.root.addEventListener('click', (e) => {
-        if (e.target === this.root) this.close();
+            if (hasNaN) {
+              canGenerateReplay = false;
+              widget.updateAction('Generate Replay');
+              seedInput.style.borderColor = '#b8432e';
+              seedErr.style.display = 'block';
+            } else {
+              canGenerateReplay = true;
+              widget.updateAction('Generate Replay');
+              seedInput.style.borderColor = 'var(--accent)';
+              seedErr.style.display = 'none';
+            }
+          };
+
+          root.appendChild(seedLabel);
+          root.appendChild(seedInput);
+          root.appendChild(seedErr);
+        },
+
+        actions: [
+          {
+            label: 'Cancel',
+            onClick: w => w.close()
+          },
+          {
+            label: 'Generate Replay',
+            primary: true,
+            disabled: () => !canGenerateReplay,
+            onClick: (w) => {
+              /** @type {number[]} */
+              let startOrder = seed
+                .split(',')
+                .filter(n => n.trim())
+                .map(n => parseInt(n.trim(), 10));
+
+              if (!startOrder.length) {
+                startOrder = this._generateRandomSeed(12);
+              }
+
+              const moveSequence = Algorithms[selectedAlgo](startOrder);
+
+              /** @type {RecordedEvent[]} */
+              const events = [];
+              let currentTime = moveSequence.length > 0 ? delay : 0;
+              let currentState = [...startOrder];
+
+              /** @type {OpponentEvent[]} */
+              const opponent = [];
+              let oppState = [...startOrder];
+
+              const maxVal = Math.max(...startOrder);
+              /** @type {[x: number, y: number]} */
+              let currentCursor = [0.5, 0.5];
+
+              const fidelity = 120 / 1000;
+              let moveCount = 0;
+
+              for (const move of moveSequence) {
+                const targetVal = currentState[move.from];
+
+                const pickup = this._getBarHotspot(move.from, targetVal, maxVal, currentState.length);
+                const hoverDuration = delay * 0.3;
+
+                events.push(...this._synthesizeMousePath(currentCursor, pickup, currentTime, hoverDuration, hoverDuration * fidelity, true));
+                currentTime += hoverDuration;
+                currentCursor = pickup;
+
+                events.push({ t: currentTime, d: move.from, c: 1 });
+
+                const drop = this._getBarHotspot(move.to, targetVal, maxVal, currentState.length);
+                const dragDuration = delay * 0.5;
+
+                events.push(...this._synthesizeMousePath(currentCursor, drop, currentTime, dragDuration, dragDuration * fidelity, true));
+                currentTime += dragDuration;
+                currentCursor = drop;
+
+                events.push({ t: currentTime, u: move.to, c: 1 });
+
+                const [val] = currentState.splice(move.from, 1);
+                currentState.splice(move.to, 0, val);
+
+                const [el] = oppState.splice(move.from, 1);
+                oppState.splice(move.to, 0, el);
+
+                opponent.push({
+                  t: currentTime,
+                  o: oppState.slice(),
+                  n: ++moveCount
+                });
+
+                currentTime += delay * 0.2;
+              }
+
+              let nameClass = 'name-bronze';
+              if (currentTime < 6000) nameClass = 'name-champion';
+              else if (currentTime < 8000) nameClass = 'name-grandmaster';
+              else if (currentTime < 10000) nameClass = 'name-master';
+              else if (currentTime < 12000) nameClass = 'name-diamond';
+              else if (currentTime < 14000) nameClass = 'name-platinum';
+              else if (currentTime < 16000) nameClass = 'name-gold';
+              else if (currentTime < 18000) nameClass = 'name-silver';
+
+              const recording = {
+                startOrder: [...startOrder],
+                opponentStartOrder: [...startOrder],
+                events,
+                opponent,
+                playerName: `${selectedAlgo} ${delay}ms`,
+                playerNameClass: nameClass,
+                opponentName: `${selectedAlgo} ${delay}ms`,
+                opponentNameClass: nameClass,
+                playerElo: null,
+                opponentElo: null,
+                matchLength: currentTime
+              };
+
+              callback(recording);
+              w.close();
+            }
+          }
+        ]
       });
     }
 
@@ -3672,204 +3917,71 @@
      * @param {number} length 
      * @returns {number[]}
      */
-    _generateRandomSeed(length = 12) {
+    _generateRandomSeed(length) {
       const arr = Array.from({ length }, () => Math.floor(Math.random() * 99) + 1);
-      // Ensure no duplicates just to be safe
       return [...new Set(arr)].length === length ? arr : this._generateRandomSeed(length);
     }
 
-    _generate(isCursor = true) {
-      /** @type {HTMLInputElement} */
-      const sgDelay = assert(this.root.querySelector('#sg-delay'));
-      let delay = parseInt(sgDelay.value, 10);
-      if (!isFinite(delay)) delay = 450;
-      /** @type {HTMLInputElement} */
-      const sgSeed = assert(this.root.querySelector('#sg-seed'));
-      const seedInput = sgSeed.value;
-
-      /** @type {number[]} */
-      let startOrder = [];
-      if (seedInput.trim()) {
-        startOrder = seedInput.split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
-      }
-      if (startOrder.length !== 12) {
-        startOrder = this._generateRandomSeed(12);
-      }
-
-      const moveSequence = Algorithms[this.selectedAlgo](startOrder);
-
-      /** @type {RecordedEvent[]} */
-      const events = [];
-      let currentTime = moveSequence.length > 0 ? delay : 0;
-      let currentState = [...startOrder];
-
-      /** @type {OpponentEvent[]} */
-      const opponent = [];
-      let oppState = [...startOrder];
-
-      const maxVal = Math.max(...startOrder);
-
-      /** @type { [x: number, y: number] } */
-      let currentCursor = [0.5, 0.5]; // Start the cursor in the dead center of the arena
-
-      const fidelity = 120 / 1000; // Frames per second
-
-      let moveCount = 0;
-      for (const move of moveSequence) {
-        const targetVal = currentState[move.from];
-
-        // --- PHASE 1: Travel to pickup the bar ---
-        const pickupHotspot = this._getBarHotspot(move.from, targetVal, maxVal, currentState.length);
-        const hoverDuration = delay * 0.3; // 30% of the time is spent moving to the bar
-
-        const hoverPath = this._synthesizeMousePath(
-          currentCursor, pickupHotspot, currentTime, hoverDuration, hoverDuration * fidelity, isCursor
-        );
-        events.push(...hoverPath);
-        currentTime += hoverDuration;
-        currentCursor = pickupHotspot;
-
-        // Click down
-        events.push({ t: currentTime, d: move.from, c: 1 });
-
-        // --- PHASE 2: Drag to the destination ---
-        // Calculate where the bar WILL be dropped
-        const dropHotspot = this._getBarHotspot(move.to, targetVal, maxVal, currentState.length);
-        const dragDuration = delay * 0.5; // 50% of the time is spent dragging it
-
-        const dragPath = this._synthesizeMousePath(
-          currentCursor, dropHotspot, currentTime, dragDuration, dragDuration * fidelity, isCursor
-        );
-        events.push(...dragPath);
-        currentTime += dragDuration;
-        currentCursor = dropHotspot;
-
-        // Drop it
-        events.push({ t: currentTime, u: move.to, c: 1 });
-
-        // Mutate local state
-        const [val] = currentState.splice(move.from, 1);
-        currentState.splice(move.to, 0, val);
-
-        const [el] = oppState.splice(move.from, 1);
-        oppState.splice(move.to, 0, el);
-
-        opponent.push({
-          t: currentTime,
-          o: oppState.slice(),
-          n: ++moveCount
-        });
-
-        // Rest before next move (remaining 20% of the delay)
-        currentTime += (delay * 0.2);
-      }
-
-      // Dynamically assign rank class based on total time
-      let nameClass = 'name-bronze';
-      if (currentTime < 6000) nameClass = 'name-champion';
-      else if (currentTime < 8000) nameClass = 'name-grandmaster';
-      else if (currentTime < 10000) nameClass = 'name-master';
-      else if (currentTime < 12000) nameClass = 'name-diamond';
-      else if (currentTime < 14000) nameClass = 'name-platinum';
-      else if (currentTime < 16000) nameClass = 'name-gold';
-      else if (currentTime < 18000) nameClass = 'name-silver';
-
-      const recording = {
-        startOrder: [...startOrder],
-        opponentStartOrder: [...startOrder],
-        events: events,
-        opponent: opponent,
-        playerName: `${this.selectedAlgo} ${delay}ms`,
-        playerNameClass: nameClass,
-        opponentName: `${this.selectedAlgo} ${delay}ms`,
-        opponentNameClass: nameClass,
-        playerElo: null,
-        opponentElo: null,
-        matchLength: currentTime
-      };
-
-      this.callback(recording);
-      this.close();
-    }
-
-    close() {
-      this.root.remove();
-    }
-
     /**
-     * Calculates a randomized [x, y] percentage coordinate within a bar's exact bounding box.
-     * @param {number} index The current logical index of the bar
-     * @param {number} val The value of the bar
-     * @param {number} maxVal The maximum value in the array
-     * @param {number} totalBars The total number of bars (N)
-     * @returns {[number, number]}
+     * @param {number} index
+     * @param {number} val
+     * @param {number} maxVal
+     * @param {number} totalBars
+     * @returns {[x: number, y: number]}
      */
     _getBarHotspot(index, val, maxVal, totalBars) {
-      // 1. Recreate the layout math exactly as the game computes it
-      const W = 300; // Assumed moderate arena size
+      const W = 300;
       const gap = 8;
       const barWidth = Math.max(12, (W - gap * (totalBars - 1)) / totalBars);
       const step = barWidth + gap;
 
-      // 2. Calculate pixel bounds
-      const minX_px = index * step;
-      const maxX_px = minX_px + barWidth;
+      const minX = (index * step) / W;
+      const maxX = (index * step + barWidth) / W;
 
-      // 3. Convert pixel bounds to percentages 
-      const minX = minX_px / W;
-      const maxX = maxX_px / W;
-
-      // Apply horizontal padding (e.g., 20% of the bar's width) so it doesn't clip the edge
       const padX = (barWidth * 0.2) / W;
       const safeMinX = minX + padX;
       const safeMaxX = maxX - padX;
 
-      // 4. Calculate Y bounds based on value height
       const heightPercent = val / maxVal;
-      const paddingY = heightPercent * 0.2; // 20% padding of the bar's height
+      const paddingY = heightPercent * 0.2;
 
       const minY = 1 - heightPercent + paddingY;
       const maxY = 1 - paddingY;
 
-      // 5. Pick a random target inside the safe box
-      const targetX = safeMinX + (Math.random() * (safeMaxX - safeMinX));
-      const targetY = minY + (Math.random() * (maxY - minY));
-
       return [
-        targetX,
-        targetY
+        safeMinX + Math.random() * (safeMaxX - safeMinX),
+        minY + Math.random() * (maxY - minY)
       ];
     }
 
     /**
-     * Generates a sequence of interpolated `m` events between two points.
-     * @param {[number, number]} start [x, y]
-     * @param {[number, number]} end [x, y]
-     * @param {number} startTime Timestamp when movement begins
-     * @param {number} duration How long the movement takes
-     * @param {number} steps How many 'm' events to generate
-     * @param {boolean} isCursor Sets c = 1 | 0
+     * 
+     * @param {[x: number, y: number]} start
+     * @param {[x: number, y: number]} end
+     * @param {number} startTime
+     * @param {number} duration
+     * @param {number} steps
+     * @param {boolean} isCursor
      * @returns {RecordedMoveEvent[]}
      */
     _synthesizeMousePath(start, end, startTime, duration, steps, isCursor) {
       /** @type {RecordedMoveEvent[]} */
-      const pathEvents = [];
+      const path = [];
       const timeStep = duration / steps;
 
       for (let i = 1; i <= steps; i++) {
-        // Simple linear interpolation (can add Bezier curves or noise later)
-        const progress = i / steps;
-        const x = start[0] + (end[0] - start[0]) * progress;
-        const y = start[1] + (end[1] - start[1]) * progress;
-
-        pathEvents.push({
-          t: Math.floor(startTime + (timeStep * i)),
-          m: [x, y],
+        const p = i / steps;
+        path.push({
+          t: Math.floor(startTime + timeStep * i),
+          m: [
+            start[0] + (end[0] - start[0]) * p,
+            start[1] + (end[1] - start[1]) * p
+          ],
           c: isCursor ? 1 : 0
         });
       }
 
-      return pathEvents;
+      return path;
     }
   }
   //#endregion
