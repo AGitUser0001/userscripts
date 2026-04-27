@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.09
+// @version     2026.04.27.4.10
 // @author      auser0001
 // ==/UserScript==
 
@@ -877,6 +877,7 @@
         for (let i = values.length; i < this.bars.length; i++) {
           this.bars[i].remove();
         }
+        this.bars.length = values.length;
       }
 
       this.bars.forEach((bar, i) => {
