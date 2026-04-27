@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.10
+// @version     1.7.10.10.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2422,7 +2422,7 @@
 
       /** @type {NodeListOf<HTMLButtonElement>} */
       this.selectionControls = this.root.querySelectorAll(
-        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="delete"]'
+        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="export"], [data-act="delete"]'
       );
 
       /** @type {HTMLElement} */
