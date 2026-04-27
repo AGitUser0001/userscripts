@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.5.29
+// @version     2026.04.27.5.30
 // @author      auser0001
 // ==/UserScript==
 
@@ -1141,10 +1141,16 @@
      */
     _renderMoveCounts() {
       if (this.playerMovesEl) {
-        this.playerMovesEl.textContent = `${this._lastPlayerMoveCount} moves`;
+        if (this._lastPlayerMoveCount === 1)
+          this.playerMovesEl.textContent = `${this._lastPlayerMoveCount} move`;
+        else
+          this.playerMovesEl.textContent = `${this._lastPlayerMoveCount} moves`;
       }
       if (this.opponentMovesEl) {
-        this.opponentMovesEl.textContent = `${this._lastOpponentMoveCount} moves`;
+        if (this._lastOpponentMoveCount === 1)
+          this.opponentMovesEl.textContent = `${this._lastOpponentMoveCount} move`;
+        else
+          this.opponentMovesEl.textContent = `${this._lastOpponentMoveCount} moves`;
       }
     }
 
