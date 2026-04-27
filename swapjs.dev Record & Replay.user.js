@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.5.1
+// @version     1.7.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -2341,11 +2341,8 @@
     /* --- Mobile --- */
     @media (max-width: 600px) {
       .rc-root.is-collapsed {
-        width: 48px;
-        height: 48px;
-        padding: 0;
-        overflow: hidden;
-        justify-content: center;
+        width: 50px;
+        padding: 15px;
         border-radius: 12px;
       }
 
@@ -2355,13 +2352,10 @@
 
       .rc-root.is-collapsed .rc-header {
         justify-content: center;
-        width: 100%;
-        height: 100%;
       }
 
       .rc-root.is-collapsed .rc-toggle-btn {
-        transform: rotate(0deg);
-        font-size: 14px;
+        transform: scale(2);
       }
     }
   `);
