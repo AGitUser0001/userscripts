@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.41
+// @version     2026.04.27.4.43
 // @author      auser0001
 // ==/UserScript==
 
@@ -2387,6 +2387,7 @@
 
     .rc-tool-root {
       position: relative;
+      display: flex;
       width: 100%;
     }
 
@@ -2397,9 +2398,6 @@
       left: 0;
       right: 0;
 
-      border-radius: 10px;
-      box-shadow: 0 8px 24px #00000033;
-
       max-height: 220px;
       overflow-y: auto;
 
@@ -2407,6 +2405,7 @@
 
       gap: 4px;
       padding-top: 4px;
+      flex-wrap: wrap;
     }
 
     .rc-tool-toggle::after {
@@ -2418,11 +2417,6 @@
     /* open state */
     .rc-tool-root.is-open .rc-tool-list {
       display: flex;
-    }
-
-    /* items */
-    .rc-tool-list button:not(:first-of-type, :last-of-type) {
-      border-radius: 0;
     }
   `);
   document.adoptedStyleSheets.push(replaySS);
