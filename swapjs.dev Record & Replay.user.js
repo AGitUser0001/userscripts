@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.27.6.23
+// @version     2026.04.27.6.55
 // @author      auser0001
 // ==/UserScript==
 
@@ -2505,7 +2505,7 @@
 
       /** @type {NodeListOf<HTMLButtonElement>} */
       this.selectionControls = this.root.querySelectorAll(
-        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="export"], [data-act="delete"]'
+        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="solo"], [data-act="export"], [data-act="delete"]'
       );
 
       /** @type {NodeListOf<HTMLButtonElement>} */
