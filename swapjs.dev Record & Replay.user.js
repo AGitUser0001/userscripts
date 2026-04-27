@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.6.8.3
+// @version     1.7.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -614,6 +614,9 @@
       this.playerTimeEl = this.root.querySelector('.match-head .vs-side:not(.right) .vs-time');
 
       /** @type {HTMLElement | null} */
+      this.matchClockEl = this.root.querySelector('.match-head .match-clock .clock-cap');
+
+      /** @type {HTMLElement | null} */
       this.opponentTimeEl = this.root.querySelector('.match-head .vs-side.right .vs-time');
 
       /** @type {HTMLElement | null} */
@@ -1028,7 +1031,11 @@
     /** @type {number | null} */
     _frozenPlayerMs = null;
     /** @type {number | null} */
+    _frozenClockMs = null;
+    /** @type {number | null} */
     _frozenOppMs = null;
+
+    _matchClockMax = 90;
 
     /**
      * @returns {void}
@@ -1063,6 +1070,20 @@
 
       if (this.playerTimeEl) {
         this.playerTimeEl.textContent = `${(playerMs / 1000).toFixed(2)}s`;
+      }
+
+      let matchClockMs;
+      if (this._frozenClockMs != null)
+        matchClockMs = this._frozenClockMs;
+      else {
+        matchClockMs = elapsed;
+        if (this._frozenOppMs != null && this._frozenPlayerMs != null)
+          this._frozenClockMs = elapsed;
+      }
+
+      if (this.matchClockEl) {
+        const currentMatchClock = Math.max(0, Math.ceil(this._matchClockMax - (matchClockMs / 1000)));
+        this.matchClockEl.textContent = `${currentMatchClock}s`;
       }
 
       if (this.opponentTimeEl) {
@@ -1934,7 +1955,7 @@
       <div class="match-head ${svClass}">
         <div class="vs-side ${svClass}"><span class="vs-name ${svClass}">you</span> <span
                 class="vs-time ${svClass}">0.00s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
-        <!--<div class="match-clock ${svClass}"><span class="clock-cap ${svClass}">90s</span></div>-->
+        <div class="match-clock ${svClass}"><span class="clock-cap ${svClass}">90s</span></div>
         <div class="vs-side right ${svClass}"><span class="vs-name ${svClass}">opponent </span> <span
                 class="vs-time ${svClass}">0.00s</span> <span class="vs-moves ${svClass}">0 moves</span></div>
       </div>
@@ -2051,7 +2072,6 @@
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 1px 4px #1613160a;
-      display: flex;
       flex-direction: column;
       gap: 16px;
 
@@ -2094,12 +2114,12 @@
     .rc-actions {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .rc-actions .row {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
@@ -2117,9 +2137,12 @@
       text-align: center;
     }
 
-    .rc-actions button:not([data-act="replay"], [data-act="generate-sort"]):hover:not(:disabled) {
+    .rc-actions button:not([data-act="replay"]):hover:not(:disabled) {
       color: var(--dark);
       border-color: var(--accent);
+    }
+
+    .rc-actions button:hover:not(:disabled) {
       transform: translateY(-1px);
     }
 
@@ -2127,18 +2150,6 @@
       background: var(--dark);
       color: var(--bg);
       border: 1px solid var(--dark);
-    }
-
-    .rc-actions button[data-act="generate-sort"] {
-      background: var(--accent);
-      color: var(--dark);
-      border: 1px solid var(--accent);
-    }
-
-    .rc-actions button[data-act="replay"]:hover:not(:disabled),
-    .rc-actions button[data-act="generate-sort"]:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px #16131622;
     }
 
     .rc-actions button[data-act="delete"]:hover:not(:disabled) {
@@ -2168,7 +2179,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-top: 10px;
+      padding-top: 8px;
       max-height: 250px;
       overflow-y: auto;
       scrollbar-width: thin;
@@ -2213,8 +2224,7 @@
 
     /* Selected */
     .rc-item.is-selected {
-      background: var(--dark);
-      color: var(--bg);
+      background: var(--bg);
     }
 
     /* --- Main row --- */
@@ -2302,6 +2312,7 @@
       border: 1px solid var(--border);
       background: var(--bg);
       font-size: 13px;
+      font-weight: 600;
       color: var(--dark);
     }
 
@@ -2589,11 +2600,8 @@
           if (selectionEnd != null) selectionEnd += offset;
           searchField.setSelectionRange(selectionStart, selectionEnd, selectionDirection || undefined);
         }
-        const value = searchField.value.trim();
-        if (this.searchQuery !== value) {
-          this.searchQuery = value;
-          this._renderList();
-        }
+        this.searchQuery = searchField.value.trim();
+        this._renderList(null);
       });
       searchField.addEventListener('change', () => {
         if (searchField.value !== this.searchQuery)
@@ -2713,10 +2721,10 @@
             <span class="rc-time"
                   data-ts="${time.getTime()}"
                   title="${time.toLocaleString()}">
-              ${this._formatTime(time)}
+              ${formatTime(time)}
             </span>
             <span class="rc-duration">
-              ${this._formatDuration(r.data.matchLength)}
+              ${formatDuration(r.data.matchLength)}
             </span>
           </div>
         `;
@@ -2729,111 +2737,6 @@
       }
     }
 
-    /**
-     * @param {number} ms
-     * @returns {string}
-     */
-    _formatDuration(ms) {
-      const s = Math.floor(ms / 1000);
-      const fractional = Math.floor(ms % 1000);
-
-      // < 1 minute → seconds
-      if (s < 60) {
-        return this._dfn.format({
-          seconds: s,
-          milliseconds: fractional
-        });
-      }
-
-      // < 1 hour → m + s
-      if (s < 3600) {
-        return this._dfd.format({
-          minutes: Math.floor(s / 60),
-          seconds: s % 60,
-          milliseconds: fractional
-        });
-      }
-
-      return this._dfd.format({
-        hours: Math.floor(s / 3600),
-        minutes: Math.floor((s % 3600) / 60),
-        seconds: s % 60,
-        milliseconds: fractional
-      });
-    }
-
-    _dfd = new Intl.DurationFormat(undefined, {
-      style: 'digital',
-      milliseconds: 'numeric'
-    });
-
-    _dfn = new Intl.DurationFormat(undefined, {
-      style: 'narrow',
-      milliseconds: 'numeric',
-      secondsDisplay: 'always'
-    });
-
-    _tf = new Intl.DurationFormat(undefined, {
-      style: 'narrow'
-    });
-
-    /**
-     * @param {Date} date 
-     * @returns {string}
-     */
-    _formatTime(date) {
-      const now = Date.now();
-      const diffMs = now - date.getTime();
-
-      const totalSec = Math.floor(diffMs / 1000);
-
-      const df = this._tf;
-
-      // < 20 seconds → now
-      if (totalSec < 20) {
-        return 'now';
-      }
-
-      // < 1 minute → seconds
-      if (totalSec < 60) {
-        return df.format({ seconds: totalSec }) + ' ago';
-      }
-
-      // < 1 hour → m + s
-      if (totalSec < 3600) {
-        return df.format({
-          minutes: Math.floor(totalSec / 60),
-          seconds: totalSec % 60
-        }) + ' ago';
-      }
-
-      // < 24 hours → h + m
-      if (totalSec < 86400) {
-        return df.format({
-          hours: Math.floor(totalSec / 3600),
-          minutes: Math.floor((totalSec % 3600) / 60)
-        }) + ' ago';
-      }
-
-      const d = new Date(date);
-
-      // < 7 days → weekday + time
-      if (totalSec < 604800) {
-        return d.toLocaleString(undefined, {
-          weekday: 'short',
-          hour: 'numeric',
-          minute: '2-digit'
-        });
-      }
-
-      // older → full date
-      return d.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-
     _startTimeUpdates() {
       if (this._timeInterval) return;
 
@@ -2843,7 +2746,7 @@
 
         for (const el of nodes) {
           const ts = Number(el.dataset.ts);
-          el.textContent = this._formatTime(new Date(ts));
+          el.textContent = formatTime(new Date(ts));
         }
       }, 10000);
     }
@@ -2949,10 +2852,115 @@
     }
   }
 
+  const tf = new Intl.DurationFormat(undefined, {
+    style: 'narrow'
+  });
   /**
- * @param {string} query
- * @param {ReplayEntry[]} list
- */
+   * @param {Date} date 
+   * @returns {string}
+   */
+  function formatTime(date) {
+    const now = Date.now();
+    const diffMs = now - date.getTime();
+
+    const totalSec = Math.floor(diffMs / 1000);
+
+    const df = tf;
+
+    // < 20 seconds → now
+    if (totalSec < 20) {
+      return 'now';
+    }
+
+    // < 1 minute → seconds
+    if (totalSec < 60) {
+      return df.format({ seconds: totalSec }) + ' ago';
+    }
+
+    // < 1 hour → m + s
+    if (totalSec < 3600) {
+      return df.format({
+        minutes: Math.floor(totalSec / 60),
+        seconds: totalSec % 60
+      }) + ' ago';
+    }
+
+    // < 24 hours → h + m
+    if (totalSec < 86400) {
+      return df.format({
+        hours: Math.floor(totalSec / 3600),
+        minutes: Math.floor((totalSec % 3600) / 60)
+      }) + ' ago';
+    }
+
+    const d = new Date(date);
+
+    // < 7 days → weekday + time
+    if (totalSec < 604800) {
+      return d.toLocaleString(undefined, {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+
+    // older → full date
+    return d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  /**
+   * @param {number} ms
+   * @returns {string}
+   */
+  function formatDuration(ms, enableFractional = true) {
+    const s = Math.floor(ms / 1000);
+    const fractional = enableFractional ? Math.floor(ms % 1000) : 0;
+
+    // < 1 minute → seconds
+    if (s < 60) {
+      return dfn.format({
+        seconds: s,
+        milliseconds: fractional
+      });
+    }
+
+    // < 1 hour → m + s
+    if (s < 3600) {
+      return dfd.format({
+        minutes: Math.floor(s / 60),
+        seconds: s % 60,
+        milliseconds: fractional
+      });
+    }
+
+    return dfd.format({
+      hours: Math.floor(s / 3600),
+      minutes: Math.floor((s % 3600) / 60),
+      seconds: s % 60,
+      milliseconds: fractional
+    });
+  }
+
+  const dfd = new Intl.DurationFormat(undefined, {
+    style: 'digital',
+    milliseconds: 'numeric',
+    hoursDisplay: 'auto'
+  });
+
+  const dfn = new Intl.DurationFormat(undefined, {
+    style: 'narrow',
+    milliseconds: 'numeric',
+    secondsDisplay: 'always'
+  });
+
+  /**
+   * @param {string} query
+   * @param {ReplayEntry[]} list
+   */
   function searchReplays(query, list) {
     /** @param {string} s */
     const tokenize = (s) =>
@@ -2963,12 +2971,17 @@
 
     return list
       .map(r => {
+        const tsDate = new Date(r.ts);
         /** @type {Map<string, [weight: number, text: string]>} */
         const fields = new Map([
-          ['name', [1.0, r.data.opponentName]],
-          ['elo', [0.8, r.data.opponentElo != null ? String(r.data.opponentElo) : '']],
-          ['result', [0.6, ['unknown', 'win', 'loss'][r.result]]],
-          ['short', [0.6, ['?', 'w', 'l'][r.result]]],
+          ['name', [1.4, r.data.opponentName]],
+          ['elo', [1.0, r.data.opponentElo != null ? `${r.data.opponentElo} elo` : '']],
+          ['rank', [0.8, r.data.opponentNameClass != null ? `${(
+            r.data.opponentNameClass.replace(/^name-/, '')
+          )}` : '']],
+          ['result', [0.6, ['unknown ?', 'win won w', 'loss lost lose l'][r.result]]],
+          ['duration', [0.5, formatDuration(r.data.matchLength) + ' ' + formatDuration(r.data.matchLength, false)]],
+          ['time', [0.5, formatTime(tsDate)]]
         ]);
 
         let totalScore = 0;
@@ -3081,13 +3094,45 @@
 
     // 3. Fill Matrix using Levenshtein logic
     for (let i = 1; i <= n; i++) {
+      const char1 = s1[i - 1];
+
+      // Determine significance of char1 if it's a digit
+      // We look ahead to see how many digits follow it
+      let significance1 = 0.5;
+      if (/\d/.test(char1)) {
+        let lookAhead = i;
+        while (lookAhead < n && /\d/.test(s1[lookAhead])) {
+          significance1 *= 2; // Each digit to the right increases importance
+          lookAhead++;
+        }
+        if (!/\d/.test(s1[i - 2])) {
+          significance1 *= 3;
+        }
+      }
+
       for (let j = 1; j <= h; j++) {
-        // more cost for substitution
-        const cost = s1[i - 1] === s2[j - 1] ? 0 : 3;
+        const char2 = s2[j - 1];
+        let cost;
+
+        if (char1 === char2) {
+          cost = 0;
+        } else {
+          const num1 = parseInt(char1, 10);
+          const num2 = parseInt(char2, 10);
+
+          if (!isNaN(num1) && !isNaN(num2)) {
+            cost = 0.5 * significance1;
+            if (num2 - num1 < num1)
+              cost += Math.abs(num2 - num1) * significance1 / Math.max(num1, num2);
+          } else {
+            cost = 3; // Standard high penalty for text
+          }
+        }
+
         rows[i][j] = Math.min(
-          rows[i - 1][j] + 2,      // deletion
-          rows[i][j - 1] + 2,      // insertion
-          rows[i - 1][j - 1] + cost // substitution
+          rows[i - 1][j] + 2,
+          rows[i][j - 1] + 2,
+          rows[i - 1][j - 1] + cost
         );
       }
     }
@@ -3544,7 +3589,8 @@
     _generate(isCursor = true) {
       /** @type {HTMLInputElement} */
       const sgDelay = assert(this.root.querySelector('#sg-delay'));
-      const delay = parseInt(sgDelay.value, 10) || 450;
+      let delay = parseInt(sgDelay.value, 10);
+      if (!isFinite(delay)) delay = 450;
       /** @type {HTMLInputElement} */
       const sgSeed = assert(this.root.querySelector('#sg-seed'));
       const seedInput = sgSeed.value;
