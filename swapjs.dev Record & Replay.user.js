@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.2
+// @version     1.7.10.3
 // @author      auser0001
 // ==/UserScript==
 
@@ -3020,10 +3020,11 @@
    * @param {ReplayEntry[]} list
    */
   function searchReplays(query, list) {
+    query = query.toLowerCase();
+
     /** @param {string} s */
     const tokenize = (s) =>
-      s.split(/[\s\-_/.,]+/).filter(Boolean)
-        .map(p => p.toLowerCase());
+      s.split(/[\s\-_/.,]+/).filter(Boolean);
 
     const parts = tokenize(query);
 
@@ -3045,7 +3046,8 @@
         let totalScore = 0;
         let matchedParts = 0;
 
-        for (const [_key, [weight, text]] of fields) {
+        for (let [_key, [_weight, text]] of fields) {
+          text = text.toLowerCase();
           const dist = fuzzySubstring(query, text);
           let score = Math.max(0, 1 - dist);
           if (text.includes(query))
@@ -3056,7 +3058,8 @@
         for (const part of parts) {
           let score = 0;
 
-          for (const [_key, [weight, text]] of fields) {
+          for (let [_key, [weight, text]] of fields) {
+            text = text.toLowerCase();
             const tokens = tokenize(text);
 
             let bestLocal = 0;
