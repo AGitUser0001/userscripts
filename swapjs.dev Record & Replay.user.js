@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.6.04
+// @version     2026.04.27.6.08
 // @author      auser0001
 // ==/UserScript==
 
@@ -3948,7 +3948,7 @@
           seedErr.className = 'w-sub';
           seedErr.style.color = '#b8432e';
           seedErr.style.display = 'none';
-          seedErr.textContent = 'Seed must contain only numeric integer elements.';
+          seedErr.textContent = 'Seed must contain only integers greater than or equal to zero.';
 
           seedInput.oninput = () => {
             seed = seedInput.value.trim();
@@ -3965,7 +3965,7 @@
               .split(',')
               .filter(n => n.trim())
               .map(n => parseInt(n.trim(), 10))
-              .some(n => isNaN(n));
+              .some(n => isNaN(n) || n < 0);
 
             if (hasNaN) {
               errs.add('seedInput');
@@ -4334,7 +4334,7 @@
           seedErr.className = 'w-sub';
           seedErr.style.color = '#b8432e';
           seedErr.style.display = 'none';
-          seedErr.textContent = 'Seed must contain only integers.';
+          seedErr.textContent = 'Seed must contain only integers greater than or equal to zero.';
 
           seedInput.oninput = () => {
             seed = seedInput.value.trim();
@@ -4353,7 +4353,7 @@
               .filter(x => x.trim())
               .map(x => parseInt(x.trim(), 10));
 
-            if (parsed.some(n => isNaN(n))) {
+            if (parsed.some(n => isNaN(n) || n < 0)) {
               errs.add('seed');
               seedInput.style.borderColor = '#b8432e';
               seedErr.style.display = 'block';
