@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.3.55
+// @version     2026.04.27.3.56
 // @author      auser0001
 // ==/UserScript==
 
@@ -3761,17 +3761,17 @@
           // === Seed Input ===
           const seedLabel = document.createElement('label');
           seedLabel.className = 'w-label';
-          seedLabel.textContent = 'Custom Seed (Optional CSV, exactly 12 numbers)';
+          seedLabel.textContent = 'Custom Seed';
 
           const seedInput = document.createElement('input');
           seedInput.className = 'w-input';
-          seedInput.placeholder = 'e.g. 50, 12, 85, 33...';
+          seedInput.placeholder = '50, 12, 85, 33...';
 
           const seedErr = document.createElement('div');
           seedErr.className = 'w-sub';
           seedErr.style.color = '#b8432e';
           seedErr.style.display = 'none';
-          seedErr.textContent = 'Seed must contain exactly 12 numeric elements.';
+          seedErr.textContent = 'Seed must contain only numeric elements.';
 
           seedInput.oninput = () => {
             seed = seedInput.value.trim();
