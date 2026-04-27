@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.1
+// @version     1.7.10.2
 // @author      auser0001
 // ==/UserScript==
 
@@ -2649,6 +2649,8 @@
       });
 
       root.addEventListener('keydown', e => {
+        if (e.target instanceof HTMLButtonElement) return;
+
         if (e.key === 'ArrowDown') {
           e.preventDefault();
           this._moveSelection(1);
