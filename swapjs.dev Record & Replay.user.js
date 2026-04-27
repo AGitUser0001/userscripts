@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.53
+// @version     2026.04.27.4.54
 // @author      auser0001
 // ==/UserScript==
 
@@ -2721,17 +2721,19 @@
         const btn = e.target.closest('button');
         if (!btn) return;
 
-        this._closeToolList();
         const act = btn.dataset.act;
 
         if (act === 'replay') this._play('replay');
-        if (act === 'ghost-player') this._play('ghost-player');
-        if (act === 'ghost-opponent') this._play('ghost-opponent');
-        if (act === 'delete') this._deleteSelected();
-        if (act === 'export') this._exportSelected();
-        if (act === 'import') this._import();
-        if (act === 'show-tool-list') this._toggleToolList();
-        if (act === 'generate-sort') this._UIgenerateSort();
+        else if (act === 'ghost-player') this._play('ghost-player');
+        else if (act === 'ghost-opponent') this._play('ghost-opponent');
+        else if (act === 'delete') this._deleteSelected();
+        else if (act === 'export') this._exportSelected();
+        else if (act === 'import') this._import();
+        else if (act === 'show-tool-list') this._toggleToolList();
+        else {
+          this._closeToolList();
+          if (act === 'generate-sort') this._UIgenerateSort();
+        }
       });
 
       root.addEventListener('keydown', e => {
