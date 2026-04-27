@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.7
+// @version     1.7.10.8
 // @author      auser0001
 // ==/UserScript==
 
@@ -2698,6 +2698,7 @@
       this.listEl.innerHTML = '';
 
       if (!this.replays.length) {
+        this.selectedId = null;
         const empty = document.createElement('div');
         empty.className = 'rc-empty';
         empty.textContent = 'No replays yet';
@@ -2708,6 +2709,7 @@
       this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
 
       if (!this.resultList.length) {
+        this.selectedId = null;
         const empty = document.createElement('div');
         empty.className = 'rc-empty';
         empty.textContent = 'No results';
