@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.4
+// @version     1.7.5
 // @author      auser0001
 // ==/UserScript==
 
@@ -2296,6 +2296,10 @@
       overflow: hidden;
     }
 
+    .rc-collapsible-content {
+      min-height: 0;
+    }
+
     .rc-root.is-collapsed .rc-collapsible {
       grid-template-rows: 0fr;
       display: none; /* This will now wait for the 0.3s transition! */
@@ -2566,26 +2570,28 @@
         </div>
 
         <div class="rc-collapsible">
-          <div class="rc-content">
-            <div class="rc-actions">
-              <div class="row">
-                <button data-act="import">import</button>
-                <button data-act="export">export</button>
-                <button data-act="delete">delete</button>
+          <div class="rc-collapsible-content">
+            <div class="rc-content">
+              <div class="rc-actions">
+                <div class="row">
+                  <button data-act="import">import</button>
+                  <button data-act="export">export</button>
+                  <button data-act="delete">delete</button>
+                </div>
+                <div class="row">
+                  <button data-act="generate-sort">generate sort</button>
+                </div>
+                <div class="row">
+                  <button data-act="replay">replay</button>
+                </div>
+                <div class="row">
+                  <button data-act="ghost-player">ghost: player</button>
+                  <button data-act="ghost-opponent">ghost: opponent</button>
+                </div>
               </div>
-              <div class="row">
-                <button data-act="generate-sort">generate sort</button>
-              </div>
-              <div class="row">
-                <button data-act="replay">replay</button>
-              </div>
-              <div class="row">
-                <button data-act="ghost-player">ghost: player</button>
-                <button data-act="ghost-opponent">ghost: opponent</button>
-              </div>
+              <input type="text" placeholder="search" class="rc-search" />
+              <div class="rc-list"></div>
             </div>
-            <input type="text" placeholder="search" class="rc-search" />
-            <div class="rc-list"></div>
           </div>
         </div>
       `;
