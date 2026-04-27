@@ -2,9 +2,8 @@
 // @name        swapjs.dev/group Record & Replay
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
-// @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.6.08
+// @version     2026.04.27.6.13
 // @author      auser0001
 // ==/UserScript==
 
@@ -2432,7 +2431,7 @@
 
       gap: 4px;
       padding-top: 4px;
-      flex-wrap: wrap;
+      flex-direction: column;
       z-index: 10;
     }
 
