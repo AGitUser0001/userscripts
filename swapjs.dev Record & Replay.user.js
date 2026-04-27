@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.5.25
+// @version     2026.04.27.5.29
 // @author      auser0001
 // ==/UserScript==
 
@@ -2169,7 +2169,7 @@
       text-align: center;
     }
 
-    .rc-actions button:not([data-act="replay"]):hover:not(:disabled) {
+    .rc-actions button:not([data-act="replay"], [data-act="solo"]):hover:not(:disabled) {
       color: var(--dark);
       border-color: var(--accent);
     }
@@ -2185,7 +2185,10 @@
     }
 
     .rc-actions button[data-act="solo"] {
-      flex-shrink: 1.5;
+      background: var(--accent);
+      color: var(--bg);
+      border: 1px solid var(--accent);
+      flex-grow: 0.5;
     }
 
     .rc-actions button:disabled {
@@ -2678,7 +2681,7 @@
                 </div>
                 <div class="row">
                   <button data-act="replay">replay</button>
-                  <button data-act="solo">replay</button>
+                  <button data-act="solo">solo</button>
                 </div>
                 <div class="row">
                   <button data-act="ghost-player">ghost: player</button>
