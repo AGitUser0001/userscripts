@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.5
+// @version     1.7.5.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2293,11 +2293,17 @@
       grid-template-rows: 1fr;
       /* Transitions both the grid height AND the display property */
       transition: grid-template-rows 0.3s ease, display 0.3s allow-discrete;
-      overflow: hidden;
+    }
+
+    @starting-style {
+      .rc-collapsible {
+        grid-template-rows: 0fr;
+      }
     }
 
     .rc-collapsible-content {
       min-height: 0;
+      overflow: hidden;
     }
 
     .rc-root.is-collapsed .rc-collapsible {
