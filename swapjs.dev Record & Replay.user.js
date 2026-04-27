@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.5.51
+// @version     2026.04.27.6.00
 // @author      auser0001
 // ==/UserScript==
 
@@ -4201,7 +4201,7 @@
         /** @type {number[]} */
         let startOrder;
 
-        if (mode === 'seed' && seed) {
+        if (mode === 'seed') {
           startOrder = seed
             .split(',')
             .filter(x => x.trim())
@@ -4238,8 +4238,9 @@
            * @param {string} id
            * @param {string} title
            * @param {string} desc
+           * @param {() => void} cb
            */
-          const make = (id, title, desc) => {
+          const make = (id, title, desc, cb) => {
             const el = document.createElement('div');
             el.className = 'w-option';
             if (mode === id) el.classList.add('is-selected');
@@ -4253,13 +4254,28 @@
               mode = id;
               [...grid.children].forEach(x => x.classList.remove('is-selected'));
               el.classList.add('is-selected');
+              cb();
             };
 
             return el;
           };
 
-          grid.appendChild(make('random', 'Random', 'Generate N random values'));
-          grid.appendChild(make('seed', 'Seed', 'Use exact values'));
+          grid.appendChild(make('random', 'Random', 'Generate N random values',
+            () => {
+              countGroup.style.display = 'content';
+              seedGroup.style.display = 'none';
+              widget.updateAction('Save');
+              widget.updateAction('Start');
+            }
+          ));
+          grid.appendChild(make('seed', 'Seed', 'Use exact values',
+            () => {
+              countGroup.style.display = 'none';
+              seedGroup.style.display = 'content';
+              widget.updateAction('Save');
+              widget.updateAction('Start');
+            }
+          ));
 
           root.appendChild(grid);
 
@@ -4285,11 +4301,11 @@
             count = parseInt(countInput.value, 10);
 
             if (isNaN(count) || count <= 0) {
-              errs.add('count');
+              errs.add('random');
               countInput.style.borderColor = '#b8432e';
               countErr.style.display = 'block';
             } else {
-              errs.delete('count');
+              errs.delete('random');
               countInput.style.borderColor = '';
               countErr.style.display = 'none';
             }
@@ -4298,9 +4314,12 @@
             widget.updateAction('Start');
           };
 
-          root.appendChild(countLabel);
-          root.appendChild(countInput);
-          root.appendChild(countErr);
+          const countGroup = document.createElement('div');
+          countGroup.style.display = 'content';
+          countGroup.appendChild(countLabel);
+          countGroup.appendChild(countInput);
+          countGroup.appendChild(countErr);
+          root.appendChild(countGroup);
 
           // === Seed input ===
           const seedLabel = document.createElement('label');
@@ -4348,9 +4367,12 @@
             widget.updateAction('Start');
           };
 
-          root.appendChild(seedLabel);
-          root.appendChild(seedInput);
-          root.appendChild(seedErr);
+          const seedGroup = document.createElement('div');
+          seedGroup.style.display = 'none';
+          seedGroup.appendChild(seedLabel);
+          seedGroup.appendChild(seedInput);
+          seedGroup.appendChild(seedErr);
+          root.appendChild(seedGroup);
         },
 
         actions: [
@@ -4360,6 +4382,7 @@
           },
           {
             label: 'Save',
+            disabled: () => errs.has(mode),
             onClick: (w) => {
               const recording = buildRecording();
               callback(recording, true); // ← save = true
@@ -4369,7 +4392,7 @@
           {
             label: 'Start',
             primary: true,
-            disabled: () => !!errs.size,
+            disabled: () => errs.has(mode),
             onClick: (w) => {
               const recording = buildRecording();
               callback(recording, false); // ← save = false
