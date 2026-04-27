@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.5
+// @version     1.7.10.6
 // @author      auser0001
 // ==/UserScript==
 
@@ -3053,6 +3053,8 @@
           let score = Math.max(0, 1 - dist);
           if (text.includes(query))
             score += 0.5;
+          if (text === query)
+            score += 1;
           if (score > totalScore) totalScore = score;
         }
 
@@ -3090,7 +3092,7 @@
 
               bonus += prefixBest * 0.3;
             };
-            if (tokens.includes(part)) bonus += 0.2;
+            if (tokens.includes(part)) bonus += 0.3;
 
             const weighted = Math.max(0, bestLocal + bonus) * weight;
 
