@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.54
+// @version     2026.04.27.5.25
 // @author      auser0001
 // ==/UserScript==
 
@@ -584,14 +584,14 @@
   }
 
   /**
-   * @typedef {'replay' | 'ghost-player' | 'ghost-opponent'} GhostMode
+   * @typedef {'replay' | 'ghost-player' | 'ghost-opponent' | 'ghost-solo'} ReplayMode
    */
   class SwapReplay {
     /**
      * @param {SwapRecording} data
      * @param {string} html
      * @param {FakeCursor} cursor
-     * @param {GhostMode} [mode]
+     * @param {ReplayMode} [mode]
      */
     constructor(data, html, cursor, mode = 'replay') {
       this.mode = mode;
@@ -641,6 +641,17 @@
           if (el.textContent.includes('elo'))
             playerElo = parseInt(el.textContent);
         }
+      }
+
+      if (mode === 'ghost-solo') {
+        /** @type {NodeListOf<HTMLElement>} */
+        const vsSideRight = this.root.querySelectorAll('.match-head .vs-side.right');
+        for (const el of vsSideRight) {
+          el.style.visibility = 'hidden';
+        }
+        /** @type {HTMLElement | null} */
+        const oppArena = this.root.querySelector('.opp-arena');
+        if (oppArena) oppArena.style.display = 'none';
       }
 
       for (const el of this.root.querySelectorAll('.vs-side:not(.right) .vs-name')) {
@@ -789,7 +800,8 @@
       this._tab.textContent = {
         'replay': 'replay',
         'ghost-player': 'ghost: player',
-        'ghost-opponent': 'ghost: opponent'
+        'ghost-opponent': 'ghost: opponent',
+        'ghost-solo': 'solo'
       }[this.mode];
 
       this._originalActiveTab.classList.remove('active');
@@ -2172,6 +2184,10 @@
       border: 1px solid var(--dark);
     }
 
+    .rc-actions button[data-act="solo"] {
+      flex-shrink: 1.5;
+    }
+
     .rc-actions button:disabled {
       background: var(--empty);
       color: var(--muted);
@@ -2429,7 +2445,8 @@
    *   id: string,
    *   ts: number,
    *   result: ReplayResult,
-   *   data: SwapRecording
+   *   data: SwapRecording,
+   *   isSolo?: boolean
    * }} ReplayEntry
    */
 
@@ -2479,6 +2496,11 @@
       /** @type {NodeListOf<HTMLButtonElement>} */
       this.selectionControls = this.root.querySelectorAll(
         '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="export"], [data-act="delete"]'
+      );
+
+      /** @type {NodeListOf<HTMLButtonElement>} */
+      this.vsControls = this.root.querySelectorAll(
+        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"]'
       );
 
       /** @type {HTMLElement} */
@@ -2649,13 +2671,14 @@
                     <button class="rc-tool-toggle" data-act="show-tool-list">tools</button>
 
                     <div class="rc-tool-list">
+                      <button data-act="solo-sort">solo sort</button>
                       <button data-act="generate-sort">generate sort</button>
-                      <!-- future tools -->
                     </div>
                   </div>
                 </div>
                 <div class="row">
                   <button data-act="replay">replay</button>
+                  <button data-act="solo">replay</button>
                 </div>
                 <div class="row">
                   <button data-act="ghost-player">ghost: player</button>
@@ -2726,6 +2749,7 @@
         if (act === 'replay') this._play('replay');
         else if (act === 'ghost-player') this._play('ghost-player');
         else if (act === 'ghost-opponent') this._play('ghost-opponent');
+        else if (act === 'solo') this._play('ghost-solo');
         else if (act === 'delete') this._deleteSelected();
         else if (act === 'export') this._exportSelected();
         else if (act === 'import') this._import();
@@ -2733,6 +2757,7 @@
         else {
           this._closeToolList();
           if (act === 'generate-sort') this._UIgenerateSort();
+          else if (act === 'solo-sort') this._UIsoloSort();
         }
       });
 
@@ -2789,6 +2814,39 @@
       }).open();
     }
 
+    _UIsoloSort() {
+      new SoloSortWidget(async (recording, save) => {
+        if (save) {
+          /** @type {ReplayEntry} */
+          const entry = {
+            id: uuid4(),
+            ts: Date.now(),
+            result: 0,
+            data: recording,
+            isSolo: true
+          };
+
+          await this._add(entry);
+          this.replays = await this._loadAll();
+          this._renderList(this.replays[0].id);
+        } else {
+          this.root.classList.remove('is-collapsed');
+
+          if (this._replay) {
+            this._replay.destroy();
+            this._replay = null;
+          }
+
+          const replay = new SwapReplay(recording, snapshotHTML, this._cursor, 'ghost-solo');
+          this._replay = replay;
+
+          await replay.play();
+          await this._waitFor(() => replay._destroyed);
+          this._cursor.pointerMove({ x: -500, y: -500 });
+        }
+      }).open();
+    }
+
     /** @type {ReplayEntry[]} */
     resultList = [];
 
@@ -2836,6 +2894,9 @@
 
         if (this.selectedId === r.id) {
           el.classList.add('is-selected');
+          if (r.isSolo) {
+            this.vsControls.forEach(b => b.disabled = true);
+          }
         }
 
         const time = new Date(r.ts);
@@ -2933,13 +2994,13 @@
     _replay = null;
 
     /**
-     * @param {GhostMode} mode
+     * @param {ReplayMode} mode
      */
     _play(mode) {
       const r = this._getSelected();
       if (!r) return;
 
-      this.root.classList.toggle('is-collapsed');
+      this.root.classList.remove('is-collapsed');
 
       if (this._replay) {
         this._replay.destroy();
@@ -4091,6 +4152,215 @@
   }
   //#endregion
 
+  //#region Solo Sort Widget
+  class SoloSortWidget extends Widget {
+    /**
+     * @param {(recording: SwapRecording, save: boolean) => void} callback
+     */
+    constructor(callback) {
+      let mode = 'random';
+      let count = 12;
+      let seed = '';
+      /** @type {Set<string>} */
+      let errs = new Set();
+
+      // Helper to build recording (so we don't duplicate logic)
+      /** @returns {SwapRecording} */
+      const buildRecording = () => {
+        /** @type {number[]} */
+        let startOrder;
+
+        if (mode === 'seed' && seed) {
+          startOrder = seed
+            .split(',')
+            .filter(x => x.trim())
+            .map(x => parseInt(x.trim(), 10));
+        } else {
+          startOrder = this._generateRandomSeed(count);
+        }
+
+        return {
+          startOrder: [...startOrder],
+          opponentStartOrder: [...startOrder],
+          events: [],
+          opponent: [],
+          playerName: `solo (${startOrder.length})`,
+          playerNameClass: null,
+          opponentName: `solo (${startOrder.length})`,
+          opponentNameClass: null,
+          playerElo: null,
+          opponentElo: null,
+          matchLength: 0
+        };
+      };
+
+      super({
+        title: 'Solo Sort',
+        sub: 'Play on a board without an opponent.',
+
+        content: (root, widget) => {
+          // === Mode selection ===
+          const grid = document.createElement('div');
+          grid.className = 'w-grid-2';
+
+          /**
+           * @param {string} id
+           * @param {string} title
+           * @param {string} desc
+           */
+          const make = (id, title, desc) => {
+            const el = document.createElement('div');
+            el.className = 'w-option';
+            if (mode === id) el.classList.add('is-selected');
+
+            el.innerHTML = `
+              <div class="w-option-title">${title}</div>
+              <div class="w-option-sub">${desc}</div>
+            `;
+
+            el.onclick = () => {
+              mode = id;
+              [...grid.children].forEach(x => x.classList.remove('is-selected'));
+              el.classList.add('is-selected');
+            };
+
+            return el;
+          };
+
+          grid.appendChild(make('random', 'Random', 'Generate N random values'));
+          grid.appendChild(make('seed', 'Seed', 'Use exact values'));
+
+          root.appendChild(grid);
+
+          // === Count input ===
+          const countLabel = document.createElement('label');
+          countLabel.className = 'w-label';
+          countLabel.textContent = 'Number of Bars';
+
+          const countInput = document.createElement('input');
+          countInput.className = 'w-input';
+          countInput.type = 'number';
+          countInput.value = '12';
+          countInput.min = '1';
+          countInput.max = '200';
+
+          const countErr = document.createElement('div');
+          countErr.className = 'w-sub';
+          countErr.style.color = '#b8432e';
+          countErr.style.display = 'none';
+          countErr.textContent = 'Must be a positive integer.';
+
+          countInput.oninput = () => {
+            count = parseInt(countInput.value, 10);
+
+            if (isNaN(count) || count <= 0) {
+              errs.add('count');
+              countInput.style.borderColor = '#b8432e';
+              countErr.style.display = 'block';
+            } else {
+              errs.delete('count');
+              countInput.style.borderColor = '';
+              countErr.style.display = 'none';
+            }
+
+            widget.updateAction('Save');
+            widget.updateAction('Start');
+          };
+
+          root.appendChild(countLabel);
+          root.appendChild(countInput);
+          root.appendChild(countErr);
+
+          // === Seed input ===
+          const seedLabel = document.createElement('label');
+          seedLabel.className = 'w-label';
+          seedLabel.textContent = 'Custom Seed';
+
+          const seedInput = document.createElement('input');
+          seedInput.className = 'w-input';
+          seedInput.placeholder = '50, 12, 85, 33...';
+
+          const seedErr = document.createElement('div');
+          seedErr.className = 'w-sub';
+          seedErr.style.color = '#b8432e';
+          seedErr.style.display = 'none';
+          seedErr.textContent = 'Seed must contain only integers.';
+
+          seedInput.oninput = () => {
+            seed = seedInput.value.trim();
+
+            if (!seed) {
+              errs.delete('seed');
+              seedInput.style.borderColor = '';
+              seedErr.style.display = 'none';
+              widget.updateAction('Save');
+              widget.updateAction('Start');
+              return;
+            }
+
+            const parsed = seed
+              .split(',')
+              .filter(x => x.trim())
+              .map(x => parseInt(x.trim(), 10));
+
+            if (parsed.some(n => isNaN(n))) {
+              errs.add('seed');
+              seedInput.style.borderColor = '#b8432e';
+              seedErr.style.display = 'block';
+            } else {
+              errs.delete('seed');
+              seedInput.style.borderColor = 'var(--accent)';
+              seedErr.style.display = 'none';
+            }
+
+            widget.updateAction('Save');
+            widget.updateAction('Start');
+          };
+
+          root.appendChild(seedLabel);
+          root.appendChild(seedInput);
+          root.appendChild(seedErr);
+        },
+
+        actions: [
+          {
+            label: 'Cancel',
+            onClick: w => w.close()
+          },
+          {
+            label: 'Save',
+            onClick: (w) => {
+              const recording = buildRecording();
+              callback(recording, true); // ← save = true
+              w.close();
+            }
+          },
+          {
+            label: 'Start',
+            primary: true,
+            disabled: () => !!errs.size,
+            onClick: (w) => {
+              const recording = buildRecording();
+              callback(recording, false); // ← save = false
+              w.close();
+            }
+          }
+        ]
+      });
+    }
+
+    /**
+     * @param {number} length 
+     * @returns {number[]}
+     */
+    _generateRandomSeed(length) {
+      const arr = Array.from({ length }, () => Math.floor(Math.random() * 99) + 1);
+      return [...new Set(arr)].length === length
+        ? arr
+        : this._generateRandomSeed(length);
+    }
+  }
+  //#endregion
 
   /** @type {any} */
   // @ts-ignore
