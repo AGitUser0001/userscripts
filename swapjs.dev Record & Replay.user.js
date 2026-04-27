@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.39
+// @version     2026.04.27.4.41
 // @author      auser0001
 // ==/UserScript==
 
@@ -2404,7 +2404,9 @@
       overflow-y: auto;
 
       display: none;
-      z-index: 10;
+
+      gap: 4px;
+      padding-top: 4px;
     }
 
     .rc-tool-toggle::after {
@@ -2415,7 +2417,7 @@
 
     /* open state */
     .rc-tool-root.is-open .rc-tool-list {
-      display: block;
+      display: flex;
     }
 
     /* items */
