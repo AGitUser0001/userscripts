@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.43
+// @version     2026.04.27.4.44
 // @author      auser0001
 // ==/UserScript==
 
@@ -2406,6 +2406,7 @@
       gap: 4px;
       padding-top: 4px;
       flex-wrap: wrap;
+      z-index: 10;
     }
 
     .rc-tool-toggle::after {
