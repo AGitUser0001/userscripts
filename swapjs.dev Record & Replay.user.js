@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.3.56
+// @version     2026.04.27.4.03
 // @author      auser0001
 // ==/UserScript==
 
@@ -3697,7 +3697,8 @@
       let selectedAlgo = forbiddenSort;
       let delay = 450;
       let seed = '';
-      let canGenerateReplay = true;
+      /** @type {Set<string>} */
+      let errs = new Set();
 
       super({
         title: 'Generate Sort',
@@ -3742,7 +3743,7 @@
           // === Delay Input ===
           const delayLabel = document.createElement('label');
           delayLabel.className = 'w-label';
-          delayLabel.textContent = 'Base Delay (ms between moves)';
+          delayLabel.textContent = 'Delay (ms between moves)';
 
           const delayInput = document.createElement('input');
           delayInput.className = 'w-input';
@@ -3751,12 +3752,29 @@
           delayInput.min = '50';
           delayInput.step = '50';
 
+          const delayErr = document.createElement('div');
+          delayErr.className = 'w-sub';
+          delayErr.style.color = '#b8432e';
+          delayErr.style.display = 'none';
+          delayErr.textContent = 'Delay must be a positive integer or zero.';
+
           delayInput.oninput = () => {
             delay = parseInt(delayInput.value, 10);
+            if (isNaN(delay) || delay < 0) {
+              errs.add('delayInput');
+              widget.updateAction('Generate Replay');
+              delayInput.style.borderColor = '#b8432e';
+              delayErr.style.display = 'block';
+            } else {
+              delayInput.style.borderColor = '';
+              delayErr.style.display = 'none';
+              errs.delete('delayInput');
+            }
           };
 
           root.appendChild(delayLabel);
           root.appendChild(delayInput);
+          root.appendChild(delayErr);
 
           // === Seed Input ===
           const seedLabel = document.createElement('label');
@@ -3771,15 +3789,15 @@
           seedErr.className = 'w-sub';
           seedErr.style.color = '#b8432e';
           seedErr.style.display = 'none';
-          seedErr.textContent = 'Seed must contain only numeric elements.';
+          seedErr.textContent = 'Seed must contain only numeric integer elements.';
 
           seedInput.oninput = () => {
             seed = seedInput.value.trim();
 
             if (!seed) {
-              canGenerateReplay = true;
+              errs.delete('seedInput');
               widget.updateAction('Generate Replay');
-              seedInput.style.borderColor = 'var(--border)';
+              seedInput.style.borderColor = '';
               seedErr.style.display = 'none';
               return;
             }
@@ -3791,12 +3809,12 @@
               .some(n => isNaN(n));
 
             if (hasNaN) {
-              canGenerateReplay = false;
+              errs.add('seedInput');
               widget.updateAction('Generate Replay');
               seedInput.style.borderColor = '#b8432e';
               seedErr.style.display = 'block';
             } else {
-              canGenerateReplay = true;
+              errs.delete('seedInput');
               widget.updateAction('Generate Replay');
               seedInput.style.borderColor = 'var(--accent)';
               seedErr.style.display = 'none';
@@ -3816,7 +3834,7 @@
           {
             label: 'Generate Replay',
             primary: true,
-            disabled: () => !canGenerateReplay,
+            disabled: () => !!errs.size,
             onClick: (w) => {
               /** @type {number[]} */
               let startOrder = seed
