@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.27.6.13
+// @version     2026.04.27.6.19
 // @author      auser0001
 // ==/UserScript==
 
@@ -2840,7 +2840,7 @@
           this.replays = await this._loadAll();
           this._renderList(this.replays[0].id);
         } else {
-          this.root.classList.remove('is-collapsed');
+          this.root.classList.add('is-collapsed');
 
           if (this._replay) {
             this._replay.destroy();
@@ -3010,7 +3010,7 @@
       const r = this._getSelected();
       if (!r) return;
 
-      this.root.classList.remove('is-collapsed');
+      this.root.classList.add('is-collapsed');
 
       if (this._replay) {
         this._replay.destroy();
