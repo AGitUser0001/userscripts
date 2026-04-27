@@ -4262,7 +4262,7 @@
 
           grid.appendChild(make('random', 'Random', 'Generate N random values',
             () => {
-              countGroup.style.display = 'content';
+              countGroup.style.display = 'contents';
               seedGroup.style.display = 'none';
               widget.updateAction('Save');
               widget.updateAction('Start');
@@ -4271,7 +4271,7 @@
           grid.appendChild(make('seed', 'Seed', 'Use exact values',
             () => {
               countGroup.style.display = 'none';
-              seedGroup.style.display = 'content';
+              seedGroup.style.display = 'contents';
               widget.updateAction('Save');
               widget.updateAction('Start');
             }
@@ -4315,7 +4315,7 @@
           };
 
           const countGroup = document.createElement('div');
-          countGroup.style.display = 'content';
+          countGroup.style.display = 'contents';
           countGroup.appendChild(countLabel);
           countGroup.appendChild(countInput);
           countGroup.appendChild(countErr);
