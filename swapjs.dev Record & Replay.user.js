@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.3
+// @version     1.7.10.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -3038,7 +3038,8 @@
           ['rank', [0.8, r.data.opponentNameClass != null ? `${(
             r.data.opponentNameClass.replace(/^name-/, '')
           )}` : '']],
-          ['result', [0.6, ['unknown ?', 'win won w', 'loss lost lose l'][r.result]]],
+          ['result', [0.6, ['unknown', 'win won', 'loss lost lose'][r.result]]],
+          ['short', [0.6, ['?', 'w', 'l'][r.result]]],
           ['duration', [0.5, formatDuration(r.data.matchLength) + ' ' + formatDuration(r.data.matchLength, false)]],
           ['time', [0.5, formatTime(tsDate)]]
         ]);
