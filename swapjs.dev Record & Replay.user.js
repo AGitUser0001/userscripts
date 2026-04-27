@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.6
+// @version     1.7.6.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2074,6 +2074,7 @@
       box-shadow: 0 1px 4px #1613160a;
       flex-direction: column;
       gap: 16px;
+      overflow: hidden;
 
       width: 300px;
       max-width: calc(100vw - 2em);
@@ -2292,7 +2293,7 @@
       display: grid;
       grid-template-rows: 1fr;
       /* Transitions both the grid height AND the display property */
-      transition: grid-template-rows 0.3s ease, display 0.3s allow-discrete;
+      transition: grid-template-rows 0.4s ease, display 0.4s allow-discrete;
     }
 
     @starting-style {
@@ -2308,7 +2309,7 @@
 
     .rc-root.is-collapsed .rc-collapsible {
       grid-template-rows: 0fr;
-      display: none; /* This will now wait for the 0.3s transition! */
+      display: none;
     }
 
     .rc-content {
@@ -2347,11 +2348,7 @@
       }
 
       .rc-root.is-collapsed .rc-title {
-        display: none;
-      }
-
-      .rc-root.is-collapsed .rc-header {
-        justify-content: center;
+        visibility: hidden;
       }
 
       .rc-root.is-collapsed .rc-toggle-btn {
