@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.51
+// @version     2026.04.27.4.52
 // @author      auser0001
 // ==/UserScript==
 
@@ -2702,7 +2702,7 @@
         if (!(e.target instanceof Element) || !e.target.classList.contains('rc-tool-toggle')) {
           root.classList.remove('is-open');
         }
-      }, { capture: true });
+      });
 
       document.body.appendChild(el);
 
