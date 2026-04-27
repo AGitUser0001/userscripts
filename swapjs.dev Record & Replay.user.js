@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.52
+// @version     2026.04.27.4.53
 // @author      auser0001
 // ==/UserScript==
 
@@ -2699,8 +2699,8 @@
         const root = this.root.querySelector('.rc-tool-root');
         if (!root) return;
 
-        if (!(e.target instanceof Element) || !e.target.classList.contains('rc-tool-toggle')) {
-          root.classList.remove('is-open');
+        if (!(e.target instanceof Element) || !root.contains(e.target)) {
+          this._closeToolList();
         }
       });
 
@@ -2721,6 +2721,7 @@
         const btn = e.target.closest('button');
         if (!btn) return;
 
+        this._closeToolList();
         const act = btn.dataset.act;
 
         if (act === 'replay') this._play('replay');
@@ -2763,6 +2764,11 @@
     _toggleToolList() {
       const toolRoot = assert(this.root.querySelector('.rc-tool-root'));
       toolRoot.classList.toggle('is-open');
+    }
+
+    _closeToolList() {
+      const toolRoot = assert(this.root.querySelector('.rc-tool-root'));
+      toolRoot.classList.remove('is-open');
     }
 
     _UIgenerateSort() {
