@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.10
+// @version     2026.04.27.4.25
 // @author      auser0001
 // ==/UserScript==
 
@@ -2384,6 +2384,45 @@
         transform: scale(2);
       }
     }
+
+    .rc-tool-root {
+      position: relative;
+    }
+
+    /* hidden by default */
+    .rc-tool-list {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #00000033;
+
+      max-height: 220px;
+      overflow-y: auto;
+
+      display: none;
+      z-index: 10;
+    }
+
+    .rc-tool-toggle::after {
+      content: '▾';
+      margin-left: 8px;
+      font-size: 12px;
+    }
+
+    /* open state */
+    .rc-tool-root.is-open .rc-tool-list {
+      display: block;
+    }
+
+    /* items */
+    .rc-tool-list button {
+      border-radius: 0;
+    }
   `);
   document.adoptedStyleSheets.push(replaySS);
 
@@ -2610,7 +2649,14 @@
                   <button data-act="delete">delete</button>
                 </div>
                 <div class="row">
-                  <button data-act="generate-sort">generate sort</button>
+                  <div class="rc-tool-root">
+                    <button class="rc-tool-toggle" data-act="show-tool-list">tools</button>
+
+                    <div class="rc-tool-list">
+                      <button data-act="generate-sort">generate sort</button>
+                      <!-- future tools -->
+                    </div>
+                  </div>
                 </div>
                 <div class="row">
                   <button data-act="replay">replay</button>
@@ -2678,6 +2724,7 @@
         if (act === 'delete') this._deleteSelected();
         if (act === 'export') this._exportSelected();
         if (act === 'import') this._import();
+        if (act === 'show-tool-list') this._toggleToolList();
         if (act === 'generate-sort') this._UIgenerateSort();
       });
 
@@ -2706,6 +2753,11 @@
           }
         }
       });
+    }
+
+    _toggleToolList() {
+      const toolRoot = assert(this.root.querySelector('.rc-tool-root'));
+      toolRoot.classList.toggle('is-open');
     }
 
     _UIgenerateSort() {
