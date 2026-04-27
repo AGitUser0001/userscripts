@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10
+// @version     1.7.10.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2178,7 +2178,6 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-top: 8px;
       max-height: 250px;
       overflow-y: auto;
       scrollbar-width: thin;
@@ -2323,7 +2322,7 @@
 
     .rc-search {
       width: 100%;
-      margin-top: 10px;
+      margin: 10px 0;
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
@@ -2334,8 +2333,8 @@
     }
 
     .rc-search:focus {
-      outline: 2px solid var(--accent);
-      outline-offset: 0;
+      outline: 1px solid var(--accent);
+      outline-offset: -1px;
       border-color: transparent;
     }
 
