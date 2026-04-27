@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.3.52
+// @version     2026.04.27.3.55
 // @author      auser0001
 // ==/UserScript==
 
@@ -2700,7 +2700,7 @@
         await this._add(entry);
         this.replays = await this._loadAll();
         this._renderList(this.replays[0].id);
-      });
+      }).open();
     }
 
     /** @type {ReplayEntry[]} */
