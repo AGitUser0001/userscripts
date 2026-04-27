@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.49
+// @version     2026.04.27.4.51
 // @author      auser0001
 // ==/UserScript==
 
@@ -2699,7 +2699,7 @@
         const root = this.root.querySelector('.rc-tool-root');
         if (!root) return;
 
-        if (!(e.target instanceof Element) || !root.contains(e.target)) {
+        if (!(e.target instanceof Element) || !e.target.classList.contains('rc-tool-toggle')) {
           root.classList.remove('is-open');
         }
       }, { capture: true });
