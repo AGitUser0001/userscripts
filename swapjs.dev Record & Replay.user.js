@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.3
+// @version     1.7.4
 // @author      auser0001
 // ==/UserScript==
 
@@ -2094,8 +2094,6 @@
       text-transform: uppercase;
       letter-spacing: 2px;
       color: var(--muted);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
       cursor: pointer;
       user-select: none;
     }
@@ -2290,14 +2288,22 @@
       padding: 12px;
     }
 
-    /* --- Collapsible --- */
-    .rc-root.is-collapsed .rc-content {
-      display: none;
+    .rc-collapsible {
+      display: grid;
+      grid-template-rows: 1fr;
+      /* Transitions both the grid height AND the display property */
+      transition: grid-template-rows 0.3s ease, display 0.3s allow-discrete;
+      overflow: hidden;
     }
 
-    .rc-root.is-collapsed .rc-header {
-      border-bottom: none;
-      padding-bottom: 0;
+    .rc-root.is-collapsed .rc-collapsible {
+      grid-template-rows: 0fr;
+      display: none; /* This will now wait for the 0.3s transition! */
+    }
+
+    .rc-content {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
     }
 
     .rc-root.is-collapsed .rc-toggle-btn {
@@ -2559,26 +2565,28 @@
           <button class="rc-toggle-btn">▼</button>
         </div>
 
-        <div class="rc-content">
-          <div class="rc-actions">
-            <div class="row">
-              <button data-act="import">import</button>
-              <button data-act="export">export</button>
-              <button data-act="delete">delete</button>
+        <div class="rc-collapsible">
+          <div class="rc-content">
+            <div class="rc-actions">
+              <div class="row">
+                <button data-act="import">import</button>
+                <button data-act="export">export</button>
+                <button data-act="delete">delete</button>
+              </div>
+              <div class="row">
+                <button data-act="generate-sort">generate sort</button>
+              </div>
+              <div class="row">
+                <button data-act="replay">replay</button>
+              </div>
+              <div class="row">
+                <button data-act="ghost-player">ghost: player</button>
+                <button data-act="ghost-opponent">ghost: opponent</button>
+              </div>
             </div>
-            <div class="row">
-              <button data-act="generate-sort">generate sort</button>
-            </div>
-            <div class="row">
-              <button data-act="replay">replay</button>
-            </div>
-            <div class="row">
-              <button data-act="ghost-player">ghost: player</button>
-              <button data-act="ghost-opponent">ghost: opponent</button>
-            </div>
+            <input type="text" placeholder="search" class="rc-search" />
+            <div class="rc-list"></div>
           </div>
-          <input type="text" placeholder="search" class="rc-search" />
-          <div class="rc-list"></div>
         </div>
       `;
 
@@ -2975,7 +2983,7 @@
         /** @type {Map<string, [weight: number, text: string]>} */
         const fields = new Map([
           ['name', [1.4, r.data.opponentName]],
-          ['elo', [1.0, r.data.opponentElo != null ? `${r.data.opponentElo} elo` : '']],
+          ['elo', [1.0, r.data.opponentElo != null ? `${r.data.opponentElo} elo ${r.data.opponentElo}` : '']],
           ['rank', [0.8, r.data.opponentNameClass != null ? `${(
             r.data.opponentNameClass.replace(/^name-/, '')
           )}` : '']],
