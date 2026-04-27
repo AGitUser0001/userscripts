@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.4.04
+// @version     2026.04.27.4.09
 // @author      auser0001
 // ==/UserScript==
 
@@ -865,8 +865,18 @@
       const values = this._startOrder;
       const max = Math.max(...values);
 
-      if (values.length !== this.bars.length) {
-        throw new Error(`startOrder length ${values.length} !== player bar count ${this.bars.length}`);
+      if (values.length > this.bars.length) {
+        const barRoot = /**@type {HTMLElement}*/(this.bars[0].parentElement);
+        for (let i = this.bars.length; i < values.length; i++) {
+          this.bars[i] = /**@type {typeof this.bars[0]}*/(this.bars[0].cloneNode(true));
+          barRoot.appendChild(this.bars[i]);
+        }
+      }
+
+      if (values.length < this.bars.length) {
+        for (let i = values.length; i < this.bars.length; i++) {
+          this.bars[i].remove();
+        }
       }
 
       this.bars.forEach((bar, i) => {
@@ -884,8 +894,18 @@
     _initOpponentFromStartOrder() {
       const values = this._opponentStartOrder;
 
-      if (values.length !== this.oppBars.length) {
-        throw new Error(`opponentStartOrder length ${values.length} !== opponent bar count ${this.oppBars.length}`);
+      if (values.length > this.oppBars.length) {
+        const barRoot = /**@type {HTMLElement}*/(this.oppBars[0].parentElement);
+        for (let i = this.oppBars.length; i < values.length; i++) {
+          this.oppBars[i] = /**@type {typeof this.oppBars[0]}*/(this.oppBars[0].cloneNode(true));
+          barRoot.appendChild(this.oppBars[i]);
+        }
+      }
+
+      if (values.length < this.oppBars.length) {
+        for (let i = values.length; i < this.oppBars.length; i++) {
+          this.oppBars[i].remove();
+        }
       }
 
       const max = Math.max(...values);
