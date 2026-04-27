@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.9.2
+// @version     1.7.10
 // @author      auser0001
 // ==/UserScript==
 
@@ -2630,17 +2630,6 @@
     }
 
     /**
-     * @param {ReplayEntry[]} results
-     * @returns {ReplayEntry[]}
-     */
-    _filterResults(results) {
-      const q = this.searchQuery;
-      if (!q) return results;
-
-      return searchReplays(this.searchQuery, results);
-    }
-
-    /**
      * @param {HTMLElement} root
      */
     _wireUI(root) {
@@ -2658,6 +2647,30 @@
         if (act === 'export') this._exportSelected();
         if (act === 'import') this._import();
         if (act === 'generate-sort') this._UIgenerateSort();
+      });
+
+      root.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          this._moveSelection(1);
+        }
+
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          this._moveSelection(-1);
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+
+          if (e.shiftKey) {
+            this._play('ghost-player');
+          } else if (e.altKey) {
+            this._play('ghost-opponent');
+          } else {
+            this._play('replay');
+          }
+        }
       });
     }
 
@@ -2677,6 +2690,9 @@
       });
     }
 
+    /** @type {ReplayEntry[]} */
+    resultList = [];
+
     _renderList(selectId = this.selectedId) {
       this.listEl.innerHTML = '';
 
@@ -2688,18 +2704,18 @@
         return;
       }
 
-      const resultList = this._filterResults(this.replays);
+      this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
       if (selectId == null) {
         this.selectedId = this.replays[0].id;
       }
       if (selectId && selectId !== this.selectedId) {
-        for (const entry of resultList) {
+        for (const entry of this.resultList) {
           if (entry.id === selectId)
             this.selectedId = selectId;
         }
       }
 
-      for (const r of resultList) {
+      for (const r of this.resultList) {
         const el = document.createElement('div');
         el.className = 'rc-item';
 
@@ -2748,6 +2764,34 @@
 
         this.listEl.appendChild(el);
       }
+    }
+
+    _getSelectedIndex() {
+      return this.resultList.findIndex(r => r.id === this.selectedId);
+    }
+
+    /** @param {number} i */
+    _setSelectedByIndex(i) {
+      if (!this.resultList.length) return;
+
+      i = Math.max(0, Math.min(this.resultList.length - 1, i));
+      this.selectedId = this.resultList[i].id;
+      this._renderList();
+    }
+
+    /** @param {number} delta */
+    _moveSelection(delta) {
+      let i = this._getSelectedIndex();
+
+      if (i === -1) i = 0;
+      else i += delta;
+
+      this._setSelectedByIndex(i);
+      const el = this.listEl.querySelector('.is-selected');
+      el?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
     }
 
     _startTimeUpdates() {
