@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.9
+// @version     1.7.9.1
 // @author      auser0001
 // ==/UserScript==
 
@@ -2351,7 +2351,7 @@
       }
 
       .rc-root.is-collapsed .rc-header {
-        justify-content: flex-end;
+        justify-content: center;
       }
 
       .rc-root.is-collapsed .rc-toggle-btn {
