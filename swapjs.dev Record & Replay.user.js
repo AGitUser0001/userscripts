@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     1.7.10.9
+// @version     1.7.10.10
 // @author      auser0001
 // ==/UserScript==
 
@@ -2420,6 +2420,11 @@
       /** @type {HTMLElement} */
       this.root = this._createUI();
 
+      /** @type {NodeListOf<HTMLButtonElement>} */
+      this.selectionControls = this.root.querySelectorAll(
+        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="delete"]'
+      );
+
       /** @type {HTMLElement} */
       this.listEl = assert(this.root.querySelector('.rc-list'));
 
@@ -2703,11 +2708,10 @@
 
     /** 
      * @param {string} text
-     * @param {NodeListOf<HTMLButtonElement>} replayBtns
      */
-    _emptyList(text, replayBtns) {
+    _emptyList(text) {
       this.selectedId = null;
-      replayBtns.forEach(b => b.disabled = true);
+      this.selectionControls.forEach(b => b.disabled = true);
       const empty = document.createElement('div');
       empty.className = 'rc-empty';
       empty.textContent = 'No replays yet';
@@ -2717,23 +2721,18 @@
     _renderList(selectId = this.selectedId) {
       this.listEl.innerHTML = '';
 
-      /** @type {NodeListOf<HTMLButtonElement>} */
-      const replayBtns = this.root.querySelectorAll(
-        'button[data-act="replay"], button[data-act="ghost-player"], button[data-act="ghost-opponent"]'
-      );
-
       if (!this.replays.length) {
-        this._emptyList('No replays yet', replayBtns);
+        this._emptyList('No replays yet');
         return;
       }
 
       this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
 
       if (!this.resultList.length) {
-        this._emptyList('No results', replayBtns);
+        this._emptyList('No results');
         return;
       }
-      replayBtns.forEach(b => b.disabled = false);
+      this.selectionControls.forEach(b => b.disabled = false);
 
       if (selectId == null) {
         this.selectedId = this.resultList[0].id;
