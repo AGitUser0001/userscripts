@@ -4,7 +4,7 @@
 // @grant       unsafeWindow
 // @grant       GM_xmlhttpRequest
 // @inject-into page
-// @version     2026.04.27.5.49
+// @version     2026.04.27.5.51
 // @author      auser0001
 // ==/UserScript==
 
@@ -1098,6 +1098,8 @@
       else {
         opponentMs = elapsed;
         if (elapsed > this.data.matchLength)
+          this._frozenOppMs = opponentMs;
+        if (this.mode === 'ghost-solo')
           this._frozenOppMs = opponentMs;
       }
 
