@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.5.15
+// @version     2026.04.28.5.16
 // @author      auser0001
 // ==/UserScript==
 
@@ -696,7 +696,6 @@
 
       /** @type {HTMLElement} */
       this.countdownEl = assert(this.root.querySelector('.stage-1'));
-      this.countdownEl.style.display = 'none';
 
       /** @type {HTMLElement} */
       this.countdownTextEl = assert(this.countdownEl.querySelector('.countdown-big'));
@@ -1198,6 +1197,7 @@
      * @returns {Promise<void>}
      */
     async play() {
+      this.matchEl.replaceWith(this.countdownEl);
       setTimeout(() => {
         if (this._destroyed) return;
         this.countdownEl.scrollIntoView({
