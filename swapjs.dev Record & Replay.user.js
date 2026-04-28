@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.5.05
+// @version     2026.04.28.5.14
 // @author      auser0001
 // ==/UserScript==
 
@@ -772,6 +772,8 @@
       this._onPointerMove = this._onPointerMove.bind(this);
       this._onPointerUp = this._onPointerUp.bind(this);
 
+      this.matchEl.remove();
+
       this.arena.addEventListener('pointerdown', this._onPointerDown);
       window.addEventListener('pointermove', this._onPointerMove);
       window.addEventListener('pointerup', this._onPointerUp);
@@ -841,6 +843,7 @@
     _onResize() {
       if (this._resizeRaf != null) return;
       this._resizeRaf = requestAnimationFrame(() => {
+        if (!this.matchEl.isConnected) return;
         this._resizeRaf = null;
         this._layout();
       });
@@ -1195,8 +1198,7 @@
      * @returns {Promise<void>}
      */
     async play() {
-      this.countdownEl.style.display = '';
-      this.matchEl.style.display = 'none';
+      this.matchEl.replaceWith(this.countdownEl);
       setTimeout(() => {
         if (this._destroyed) return;
         this.countdownEl.scrollIntoView({
@@ -1211,8 +1213,7 @@
         countdown--;
       }
       if (this._destroyed) return;
-      this.countdownEl.style.display = 'none';
-      this.matchEl.style.display = '';
+      this.countdownEl.replaceWith(this.matchEl);
       this._layout();
       setTimeout(() => {
         if (this._destroyed) return;
@@ -1294,11 +1295,12 @@
     }
 
     _update() {
-      this.cursor.pointerMove(
-        this._cursorPos == null ?
-          { x: -500, y: -500 } :
-          this._arenaToClient(this._cursorPos)
-      );
+      if (this.matchEl.isConnected)
+        this.cursor.pointerMove(
+          this._cursorPos == null ?
+            { x: -500, y: -500 } :
+            this._arenaToClient(this._cursorPos)
+        );
       this._updateRaf = requestAnimationFrame(this._update);
     }
 
@@ -1332,6 +1334,7 @@
      * @param {PointerEvent} e
      */
     _onPointerDown(e) {
+      if (!this.matchEl.isConnected) return;
       if (this.mode === 'replay' && e.isTrusted) return;
 
       if (!(e.target instanceof HTMLElement)) return;
@@ -1355,6 +1358,7 @@
      */
 
     _onPointerMove(e) {
+      if (!this.matchEl.isConnected) return;
       if (this.mode === 'replay' && e.isTrusted) return;
       if (!this.dragEl) return;
       if (!this._dragOffsetX)
@@ -1379,6 +1383,7 @@
      * @param {PointerEvent} e
      */
     _onPointerUp(e) {
+      if (!this.matchEl.isConnected) return;
       if (this.mode === 'replay' && e.isTrusted) return;
       if (!this.dragEl) return;
 
@@ -2813,6 +2818,8 @@
       });
 
       document.addEventListener('pointerdown', e => {
+        if (!e.isTrusted) return;
+
         const root = this.root.querySelector('.rc-tool-root');
         if (!root) return;
 
