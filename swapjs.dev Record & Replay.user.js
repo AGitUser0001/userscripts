@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.27.8.48
+// @version     2026.04.28.5.05
 // @author      auser0001
 // ==/UserScript==
 
@@ -175,7 +175,19 @@
   }
 
   class SwapRecorder {
-    constructor() {
+    /**
+     * 
+     * @param {{ 
+     *  extraStartCond?: (() => boolean) | null,
+     *  extraStopCond?: (() => string | false) | null
+     * }} param0 
+     */
+    constructor({ extraStartCond, extraStopCond } = {}) {
+      /** @type {() => boolean} */
+      this._extraStartCond = extraStartCond || (() => true);
+      /** @type {() => string | false} */
+      this._extraStopCond = extraStopCond || (() => false);
+
       /** @type {SwapRecording} */
       this.data = {
         startOrder: [],
@@ -341,14 +353,11 @@
      * @returns {Promise<void>}
      */
     async start() {
-      const isCorrectTab = () =>
-        document.querySelector('.tab.active')?.textContent.includes('1v1 ranked')
-          ? true : false;
       const loopCond = () =>
-        !document.querySelector('.tab-body .match-wrap') || !isCorrectTab();
+        !document.querySelector('.tab-body .match-wrap') || !this._extraStartCond();
       while (loopCond()) {
         await this._waitFor(() =>
-          isCorrectTab() &&
+          this._extraStartCond() &&
           !!document.querySelector('.tab-body .match-wrap') &&
           !!document.querySelector('.vs-side .vs-elo')
         );
@@ -557,10 +566,24 @@
     }
 
     /**
+     * The method which the recorder exited.
+     * `exitMode` is `'arena'` for arena exits, `'extraStopCond'` for `extraStopCond` returning true,
+     * and the string `extraStopCond` returned otherwise
+     */
+    exitMode = 'arena';
+
+    /**
      * @returns {void}
      */
     _watchForArenaGone() {
       if (!document.querySelector('.arena')) {
+        this.exitMode = 'arena';
+        this.stop();
+        return;
+      }
+      const condResult = this._extraStopCond();
+      if (condResult) {
+        this.exitMode = condResult;
         this.stop();
         return;
       }
@@ -1175,6 +1198,7 @@
       this.countdownEl.style.display = '';
       this.matchEl.style.display = 'none';
       setTimeout(() => {
+        if (this._destroyed) return;
         this.countdownEl.scrollIntoView({
           behavior: "smooth",
           block: "start"
@@ -1186,10 +1210,12 @@
         await new Promise(r => setTimeout(r, 1000));
         countdown--;
       }
+      if (this._destroyed) return;
       this.countdownEl.style.display = 'none';
       this.matchEl.style.display = '';
       this._layout();
       setTimeout(() => {
+        if (this._destroyed) return;
         this.matchEl.scrollIntoView({
           behavior: "smooth",
           block: "start"
@@ -2205,6 +2231,10 @@
       cursor: not-allowed;
     }
 
+    .rc-actions button.is-active {
+      border-color: var(--accent);
+    }
+
     .rc-actions button[data-act="delete"]:hover:not(:disabled) {
       color: #b8432e;
       border-color: rgba(184, 67, 46, 0.3);
@@ -2322,7 +2352,6 @@
       color: var(--muted);
     }
 
-    /* --- Time --- */
     .rc-item-sub {
       font-size: 11px;
       color: var(--muted);
@@ -2332,6 +2361,25 @@
 
     .rc-time, .rc-duration {
       font-variant-numeric: tabular-nums;
+    }
+
+    .rc-type {
+      font-weight: 600;
+      text-transform: lowercase;
+    }
+
+    .rc-select-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .rc-select-btn:hover {
+      border-color: var(--accent);
+      color: var(--dark);
     }
 
     /* --- Empty --- */
@@ -2449,15 +2497,31 @@
   document.adoptedStyleSheets.push(replaySS);
 
   /**
-   * @typedef {0|1|2} ReplayResult // 0 unknown, 1 win, 2 loss
+   * @typedef {0|1|2} ReplayResult 0 unknown, 1 win, 2 loss
    *
    * @typedef {{
    *   id: string,
    *   ts: number,
    *   result: ReplayResult,
    *   data: SwapRecording,
-   *   isSolo?: boolean
+   *   lineage: ReplayLineageEntry[],
+   *   isSolo: boolean
    * }} ReplayEntry
+   *
+   * @typedef {{
+   *   id: string,
+   *   ts: number,
+   *   type: 'live' | 'generated' | 'ghost-player' | 'ghost-opponent' | 'ghost-solo',
+   *   result: ReplayResult,
+   *   isSolo: boolean,
+   *   playerName: string,
+   *   playerNameClass: string | null,
+   *   opponentName: string,
+   *   opponentNameClass: string | null,
+   *   playerElo: number | null,
+   *   opponentElo: number | null,
+   *   matchLength: number
+   * }} ReplayLineageEntry
    */
 
   class ReplayController {
@@ -2505,7 +2569,7 @@
 
       /** @type {NodeListOf<HTMLButtonElement>} */
       this.selectionControls = this.root.querySelectorAll(
-        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="solo"], [data-act="export"], [data-act="delete"]'
+        '[data-act="replay"], [data-act="ghost-player"], [data-act="ghost-opponent"], [data-act="solo"], [data-act="export"], [data-act="delete"], [data-act="view-lineage"]'
       );
 
       /** @type {NodeListOf<HTMLButtonElement>} */
@@ -2521,6 +2585,9 @@
 
       /** @type {string} */
       this.searchQuery = '';
+
+      /** @type {boolean} */
+      this.recordGhostReplays = false;
 
       this._cursor.pointerMove({ x: -500, y: -500 });
 
@@ -2563,6 +2630,7 @@
               }
               entry.data.matchLength = matchLength;
             }
+            if (!entry.lineage) entry.lineage = [];
           }
           res(arr);
         };
@@ -2614,23 +2682,37 @@
 
     async _watchMatches() {
       while (true) {
-        this.recorder = new SwapRecorder();
+        this.recorder = new SwapRecorder({
+          extraStartCond() {
+            return !!document.querySelector('.tab.active')?.textContent.includes('1v1 ranked');
+          },
+          extraStopCond() {
+            if (!document.querySelector('.tab.active')?.textContent.includes('1v1 ranked'))
+              return 'tabExit';
+            return false;
+          }
+        });
         await this.recorder.start();
 
         await this._waitFor(() => !this.recorder?.started);
 
-        const result = await this._detectResult();
+        /** @type {ReplayResult} */
+        const result = this.recorder.exitMode === 'tabExit' ? 0 : await this._detectResult();
 
+        /** @type {ReplayEntry} */
         const entry = {
           id: uuid4(),
           ts: Date.now(),
           result,
-          data: this.recorder.export()
+          data: this.recorder.export(),
+          isSolo: false,
+          lineage: []
         };
+        entry.lineage.push(this._createLineageEntry(entry, 'live'));
 
         await this._add(entry);
         this.replays = await this._loadAll();
-        this._renderList(this.replays[0].id);
+        this._renderList(entry.id);
       }
     }
 
@@ -2681,6 +2763,8 @@
                     <button class="rc-tool-toggle" data-act="show-tool-list">tools</button>
 
                     <div class="rc-tool-list">
+                      <button data-act="toggle-ghost-recording">ghost recording: <span>off</span></button>
+                      <button data-act="view-lineage">view lineage</button>
                       <button data-act="solo-sort">solo sort</button>
                       <button data-act="generate-sort">generate sort</button>
                     </div>
@@ -2746,6 +2830,30 @@
     }
 
     /**
+     * @param {ReplayEntry} entry
+     * @param {ReplayLineageEntry['type']} type
+     * @returns {ReplayLineageEntry}
+     */
+    _createLineageEntry(entry, type) {
+      const d = entry.data;
+
+      return {
+        id: entry.id ?? null,
+        ts: entry.ts ?? Date.now(),
+        type,
+        result: entry.result,
+        matchLength: d.matchLength,
+        playerName: d.playerName,
+        opponentName: d.opponentName,
+        playerNameClass: d.playerNameClass,
+        opponentNameClass: d.opponentNameClass,
+        playerElo: d.playerElo,
+        opponentElo: d.opponentElo,
+        isSolo: entry.isSolo
+      };
+    }
+
+    /**
      * @param {HTMLElement} root
      */
     _wireUI(root) {
@@ -2768,6 +2876,8 @@
           this._closeToolList();
           if (act === 'generate-sort') this._UIgenerateSort();
           else if (act === 'solo-sort') this._UIsoloSort();
+          else if (act === 'toggle-ghost-recording') this._toggleGhostRecording();
+          else if (act === 'view-lineage') this._UIviewLineage();
         }
       });
 
@@ -2808,6 +2918,16 @@
       toolRoot.classList.remove('is-open');
     }
 
+    _toggleGhostRecording() {
+      this.recordGhostReplays = !this.recordGhostReplays;
+
+      const btn = this.root.querySelector('[data-act="toggle-ghost-recording"]');
+      if (btn) {
+        btn.children[0].textContent = this.recordGhostReplays ? 'on' : 'off';
+        btn.classList.toggle('is-active', this.recordGhostReplays);
+      }
+    }
+
     _UIgenerateSort() {
       new SortGenerationWidget(async (recording) => {
         /** @type {ReplayEntry} */
@@ -2815,45 +2935,47 @@
           id: uuid4(),
           ts: Date.now(),
           result: 0,
-          data: recording
+          data: recording,
+          isSolo: false,
+          lineage: []
         };
+        entry.lineage.push(this._createLineageEntry(entry, 'generated'));
 
         await this._add(entry);
         this.replays = await this._loadAll();
-        this._renderList(this.replays[0].id);
+        this._renderList(entry.id);
       }).open();
     }
 
     _UIsoloSort() {
       new SoloSortWidget(async (recording, save) => {
-        if (save) {
-          /** @type {ReplayEntry} */
-          const entry = {
-            id: uuid4(),
-            ts: Date.now(),
-            result: 0,
-            data: recording,
-            isSolo: true
-          };
+        /** @type {ReplayEntry} */
+        const entry = {
+          id: uuid4(),
+          ts: Date.now(),
+          result: 0,
+          data: recording,
+          isSolo: true,
+          lineage: []
+        };
+        entry.lineage.push(this._createLineageEntry(entry, 'generated'));
 
+        if (save) {
           await this._add(entry);
           this.replays = await this._loadAll();
-          this._renderList(this.replays[0].id);
+          this._renderList(entry.id);
         } else {
           this.root.classList.add('is-collapsed');
-
-          if (this._replay) {
-            this._replay.destroy();
-            this._replay = null;
-          }
-
-          const replay = new SwapReplay(recording, snapshotHTML, this._cursor, 'ghost-solo');
-          this._replay = replay;
-
-          await replay.play();
-          await this._waitFor(() => replay._destroyed);
-          this._cursor.pointerMove({ x: -500, y: -500 });
+          this._startReplay(entry, 'ghost-solo');
         }
+      }).open();
+    }
+
+    _UIviewLineage() {
+      const r = this._getSelected();
+      if (!r) return;
+      new LineageWidget(r, id => {
+        this._renderList(id);
       }).open();
     }
 
@@ -3011,14 +3133,64 @@
       if (!r) return;
 
       this.root.classList.add('is-collapsed');
+      this._startReplay(r, mode);
+    }
 
+    /**
+     * @param {ReplayEntry} entry
+     * @param {ReplayMode} mode
+     */
+    _startReplay(entry, mode) {
       if (this._replay) {
         this._replay.destroy();
         this._replay = null;
       }
 
-      const replay = new SwapReplay(r.data, snapshotHTML, this._cursor, mode);
+      const replay = new SwapReplay(entry.data, snapshotHTML, this._cursor, mode);
       this._replay = replay;
+
+      if (this.recordGhostReplays && mode !== 'replay') {
+        const recorder = new SwapRecorder({
+          extraStartCond: () => true,
+          extraStopCond: () => {
+            if (replay._frozenPlayerMs != null) return 'player';
+            if (replay._frozenOppMs != null) return 'opponent';
+            if (replay._destroyed === true) return 'destroyed';
+            return false;
+          }
+        });
+        recorder.start();
+
+        this._waitFor(() => !recorder.started).then(async () => {
+          /** @type {ReplayResult} */
+          const result = recorder.exitMode === 'player' ?
+            1 : recorder.exitMode === 'opponent' ? 2 : 0;
+
+          /** @type {ReplayEntry} */
+          const newEntry = {
+            id: uuid4(),
+            ts: Date.now(),
+            result,
+            data: recorder.export(),
+            isSolo: mode === 'ghost-solo',
+            lineage: entry.lineage.slice()
+          };
+
+          if (mode === 'ghost-solo') {
+            newEntry.data.opponent = [];
+            if (newEntry.data.opponentName.endsWith(' (ghost)'))
+              newEntry.data.opponentName = newEntry.data.opponentName.slice(0, -' (ghost)'.length);
+            if (!newEntry.data.opponentName.endsWith(' (solo)'))
+              newEntry.data.opponentName += ' (solo)';
+          } else if (!newEntry.data.opponentName.endsWith(' (ghost)'))
+            newEntry.data.opponentName += ' (ghost)';
+
+          newEntry.lineage.push(this._createLineageEntry(newEntry, mode));
+          await this._add(newEntry);
+          this.replays = await this._loadAll();
+          this._renderList(newEntry.id);
+        });
+      }
 
       replay.play().then(async () => {
         await this._waitFor(() => replay._destroyed);
@@ -4429,6 +4601,102 @@
       }
 
       return arr;
+    }
+  }
+  //#endregion
+
+  //#region Lineage Widget
+  class LineageWidget extends Widget {
+    /**
+     * @param {ReplayEntry} entry
+     * @param {(id: string) => void} onSelect
+     */
+    constructor(entry, onSelect) {
+      super({
+        title: 'Lineage',
+        sub: 'Replay history and transformations.',
+
+        content: (root, widget) => {
+          const list = document.createElement('div');
+          list.className = 'rc-list';
+
+          // width constraint
+          list.style.width = 'min(80vw, 400px)';
+
+          if (!entry.lineage.length) {
+            const empty = document.createElement('div');
+            empty.className = 'rc-empty';
+            empty.textContent = 'No lineage data';
+            list.appendChild(empty);
+          } else {
+            entry.lineage.forEach((l, i, lineage) => {
+              const isCurrent = i === lineage.length - 1;
+              const item = this._createItem(l, isCurrent, widget, onSelect);
+              list.appendChild(item);
+            });
+          }
+
+          root.appendChild(list);
+        },
+
+        actions: [
+          {
+            label: 'Close',
+            primary: true,
+            onClick: w => w.close()
+          }
+        ]
+      });
+    }
+
+    /**
+     * @param {ReplayLineageEntry} l
+     * @param {boolean} isCurrent
+     * @param {Widget} widget
+     * @param {(id: string) => void} onSelect
+     */
+    _createItem(l, isCurrent, widget, onSelect) {
+      const el = document.createElement('div');
+      el.className = 'rc-item';
+      if (isCurrent) el.classList.add('is-selected');
+
+      const resultClass = ['is-unknown', 'is-win', 'is-loss'][l.result] || '';
+
+      el.innerHTML = `
+        <div class="rc-row">
+          <div class="rc-name ${l.playerNameClass || ''}">
+            ${l.playerName}
+          </div>
+          <div class="rc-vs">vs</div>
+          <div class="rc-name ${l.opponentNameClass || ''}">
+            ${l.opponentName}
+          </div>
+        </div>
+
+        <div class="rc-row rc-sub">
+          <span class="rc-result ${resultClass}"></span>
+          <span>${formatDuration(l.matchLength)}</span>
+          <span>${formatTime(new Date(l.ts))}</span>
+        </div>
+
+        <div class="rc-row rc-item-sub">
+          <span class="rc-type">${l.type}</span>
+          ${l.id && !isCurrent ? `<button class="rc-select-btn">select</button>` : ''}
+        </div>
+      `;
+
+      // attach click handler for select button
+      /** @type {HTMLButtonElement | null} */
+      const btn = el.querySelector('.rc-select-btn');
+      if (btn) {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          onSelect(l.id);
+          widget.close();
+        };
+      }
+
+      return el;
     }
   }
   //#endregion
