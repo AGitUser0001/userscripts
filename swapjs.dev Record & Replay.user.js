@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.27.6.55
+// @version     2026.04.27.8.48
 // @author      auser0001
 // ==/UserScript==
 
@@ -288,7 +288,7 @@
       const rect = arena.getBoundingClientRect();
       const count = this._barCount || this.data.startOrder.length || this._bars().length;
       const gap = this._gap;
-      const barWidth = (rect.width - gap * (count - 1)) / count;
+      const barWidth = Math.max(12, (rect.width - gap * (count - 1)) / count);
       const step = barWidth + gap;
 
       return { arena, rect, count, gap, barWidth, step };
@@ -935,7 +935,7 @@
       const W = rect.width;
       const N = this.bars.length;
 
-      this.barWidth = (W - this.gap * (N - 1)) / N;
+      this.barWidth = Math.max(12, (W - this.gap * (N - 1)) / N);
       this.step = this.barWidth + this.gap;
     }
 
@@ -1287,7 +1287,7 @@
       const rect = this.arena.getBoundingClientRect();
       const count = this.bars.length;
 
-      const barWidth = (rect.width - this.gap * (count - 1)) / count;
+      const barWidth = Math.max(12, (rect.width - this.gap * (count - 1)) / count);
       const step = barWidth + this.gap;
 
       const localPointerX = clientX - rect.left;
@@ -4128,7 +4128,7 @@
     _getBarHotspot(index, val, maxVal, totalBars) {
       const W = 300;
       const gap = 8;
-      const barWidth = (W - gap * (totalBars - 1)) / totalBars;
+      const barWidth = Math.max(12, (W - gap * (totalBars - 1)) / totalBars);
       const step = barWidth + gap;
 
       const minX = (index * step) / W;
