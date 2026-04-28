@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.5.20
+// @version     2026.04.28.5.22
 // @author      auser0001
 // ==/UserScript==
 
@@ -353,9 +353,7 @@
      * @returns {Promise<void>}
      */
     async start() {
-      const loopCond = () =>
-        !document.querySelector('.tab-body .match-wrap .arena') || !this._extraStartCond();
-      do {
+      while (true) {
         await this._waitFor(() =>
           this._extraStartCond() &&
           !!document.querySelector('.tab-body .match-wrap') &&
@@ -368,9 +366,11 @@
         await this._waitFor(() =>
           (!!document.querySelector('.arena') &&
             !!document.querySelector('.arena .bar-val'))
-          || loopCond()
+          || !document.querySelector('.tab-body .match-wrap')
+          || !this._extraStartCond()
         );
-      } while (loopCond());
+        if (document.querySelector('.arena') && this._extraStartCond()) break;
+      }
 
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
