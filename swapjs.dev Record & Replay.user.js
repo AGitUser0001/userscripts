@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.29
+// @version     2026.04.28.9.30
 // @author      auser0001
 // ==/UserScript==
 
@@ -3059,10 +3059,13 @@
             this.vsControls.forEach(b => b.disabled = true);
           }
           if (selectedChanged) {
-            el.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest'
-            });
+            setTimeout(() => {
+              if (!el.isConnected) return;
+              el.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+              });
+            }, 60);
           }
         }
 
