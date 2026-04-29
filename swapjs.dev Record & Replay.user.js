@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.37
+// @version     2026.04.28.9.39
 // @author      auser0001
 // ==/UserScript==
 
@@ -2652,7 +2652,7 @@
               }
               entry.data.matchLength = matchLength;
             }
-            if (!entry.lineage) entry.lineage = [];
+            if (!entry.lineage) entry.lineage = [this._createLineageEntry(entry, 'live')];
           }
           res(arr);
         };
@@ -2862,8 +2862,8 @@
       const d = entry.data;
 
       return {
-        id: entry.id ?? null,
-        ts: entry.ts ?? Date.now(),
+        id: entry.id,
+        ts: entry.ts,
         type,
         result: entry.result,
         matchLength: d.matchLength,
