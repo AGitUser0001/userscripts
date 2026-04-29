@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.16
+// @version     2026.04.28.9.17
 // @author      auser0001
 // ==/UserScript==
 
@@ -4661,7 +4661,7 @@
             entry.lineage.forEach((l, i, lineage) => {
               const isCurrent = i === lineage.length - 1;
               const item = this._createItem(l, isCurrent, widget, onSelect);
-              list.appendChild(item);
+              list.prepend(item);
             });
           }
 
