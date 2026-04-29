@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.22
+// @version     2026.04.28.9.29
 // @author      auser0001
 // ==/UserScript==
 
@@ -3018,7 +3018,7 @@
       this.listEl.appendChild(empty);
     }
 
-    _renderList(selectId = this.selectedId) {
+    _renderList(selectId = this.selectedId, refreshResults = true) {
       this.listEl.innerHTML = '';
 
       if (!this.replays.length) {
@@ -3026,7 +3026,8 @@
         return;
       }
 
-      this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
+      if (refreshResults)
+        this.resultList = this.searchQuery ? searchReplays(this.searchQuery, this.replays) : this.replays;
 
       if (!this.resultList.length) {
         this._emptyList('No results');
@@ -3037,10 +3038,14 @@
       if (selectId == null) {
         this.selectedId = this.resultList[0].id;
       }
+
+      let selectedChanged = false;
       if (selectId && selectId !== this.selectedId) {
         for (const entry of this.resultList) {
-          if (entry.id === selectId)
+          if (entry.id === selectId) {
             this.selectedId = selectId;
+            selectedChanged = true;
+          }
         }
       }
 
@@ -3052,6 +3057,12 @@
           el.classList.add('is-selected');
           if (r.isSolo) {
             this.vsControls.forEach(b => b.disabled = true);
+          }
+          if (selectedChanged) {
+            el.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest'
+            });
           }
         }
 
@@ -3107,8 +3118,7 @@
       if (!this.resultList.length) return;
 
       i = Math.max(0, Math.min(this.resultList.length - 1, i));
-      this.selectedId = this.resultList[i].id;
-      this._renderList();
+      this._renderList(this.resultList[i].id, false);
     }
 
     /** @param {number} delta */
@@ -3119,11 +3129,6 @@
       else i += delta;
 
       this._setSelectedByIndex(i);
-      const el = this.listEl.querySelector('.is-selected');
-      el?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      });
     }
 
     _startTimeUpdates() {
@@ -4703,7 +4708,7 @@
       const eloHtml = elo != null
         ? `<span class="rc-elo">${elo}</span>`
         : '';
-      
+
       const pelo = l.playerElo;
 
       const peloHtml = pelo != null
