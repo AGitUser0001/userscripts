@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.13
+// @version     2026.04.28.9.16
 // @author      auser0001
 // ==/UserScript==
 
@@ -2391,6 +2391,7 @@
 
     .rc-select-btn {
       background: var(--bg);
+      color: var(--muted);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 4px 8px;
