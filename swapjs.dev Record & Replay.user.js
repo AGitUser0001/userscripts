@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.39
+// @version     2026.04.28.10.06
 // @author      auser0001
 // ==/UserScript==
 
@@ -2515,6 +2515,17 @@
     .rc-tool-root.is-open .rc-tool-list {
       display: flex;
     }
+
+    /* Tint the list background when in batch mode */
+    .rc-list.is-batch-mode {
+      background: rgba(46, 139, 87, 0.05); /* Subtle blue/green tint */
+    }
+
+    /* Blue outline for selected items */
+    .rc-item.is-selected-batch {
+      outline: 2px solid var(--accent); /* Uses your existing accent color */
+      outline-offset: -2px;
+    }
   `);
   document.adoptedStyleSheets.push(replaySS);
 
@@ -2610,6 +2621,11 @@
 
       /** @type {boolean} */
       this.recordGhostReplays = false;
+
+      /** @type {boolean} */
+      this.isBatchMode = false;
+      /** @type {Set<string>} */
+      this.batchSelection = new Set();
 
       this._cursor.pointerMove({ x: -500, y: -500 });
 
@@ -2789,6 +2805,7 @@
                       <button data-act="view-lineage">view lineage</button>
                       <button data-act="solo-sort">solo sort</button>
                       <button data-act="generate-sort">generate sort</button>
+                      <button data-act="batch-export-toggle">batch export</button>
                     </div>
                   </div>
                 </div>
@@ -2888,6 +2905,7 @@
 
         const act = btn.dataset.act;
 
+        // main actions
         if (act === 'replay') this._play('replay');
         else if (act === 'ghost-player') this._play('ghost-player');
         else if (act === 'ghost-opponent') this._play('ghost-opponent');
@@ -2896,12 +2914,18 @@
         else if (act === 'export') this._exportSelected();
         else if (act === 'import') this._import();
         else if (act === 'show-tool-list') this._toggleToolList();
+        // tools
         else {
-          this._closeToolList();
-          if (act === 'generate-sort') this._UIgenerateSort();
-          else if (act === 'solo-sort') this._UIsoloSort();
-          else if (act === 'toggle-ghost-recording') this._toggleGhostRecording();
-          else if (act === 'view-lineage') this._UIviewLineage();
+          // toggles
+          if (act === 'toggle-ghost-recording') this._toggleGhostRecording();
+          else if (act === 'batch-export-toggle') this._toggleBatchExport();
+          // UI
+          else {
+            this._closeToolList();
+            if (act === 'generate-sort') this._UIgenerateSort();
+            else if (act === 'solo-sort') this._UIsoloSort();
+            else if (act === 'view-lineage') this._UIviewLineage();
+          }
         }
       });
 
@@ -2950,6 +2974,46 @@
         btn.children[0].textContent = this.recordGhostReplays ? 'on' : 'off';
         btn.classList.toggle('is-active', this.recordGhostReplays);
       }
+    }
+
+    _toggleBatchExport() {
+      const btn = this.root.querySelector('[data-act="batch-export-toggle"]');
+
+      if (this.isBatchMode) {
+        // If we have selections, finalize the export
+        if (this.batchSelection.size > 0) {
+          this._finalizeBatchExport();
+        } else {
+          // If nothing is selected, just cancel the mode
+          this.isBatchMode = false;
+        }
+      } else {
+        // Entering Batch Mode
+        this.isBatchMode = true;
+        this.batchSelection.clear();
+      }
+
+      // Update UI State
+      if (btn) btn.textContent = this.isBatchMode ? 'export batch' : 'batch export';
+      this.listEl.classList.toggle('is-batch-mode', this.isBatchMode);
+      this._renderList(this.selectedId, false); // Refresh the list view
+    }
+
+    _finalizeBatchExport() {
+      // Filter replays to only those in the selection Set
+      const toExport = this.replays.filter(r => this.batchSelection.has(r.id));
+
+      if (toExport.length > 0) {
+        const blob = new Blob([JSON.stringify(toExport)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `batch-replays-${Date.now()}.json`;
+        a.click();
+      }
+
+      // Reset state
+      this.isBatchMode = false;
+      this.batchSelection.clear();
     }
 
     _UIgenerateSort() {
@@ -3098,8 +3162,25 @@
           </div>
         `;
 
+        // Apply the blue outline if selected
+        if (this.isBatchMode && this.batchSelection.has(r.id)) {
+          el.classList.add('is-selected-batch');
+        }
+
         el.onclick = () => {
-          this._renderList(r.id);
+          if (this.isBatchMode) {
+            // Intercept click to toggle selection
+            if (this.batchSelection.has(r.id)) {
+              this.batchSelection.delete(r.id);
+            } else {
+              this.batchSelection.add(r.id);
+            }
+            // Re-render only the items (no search refresh)
+            this._renderList(r.id, false);
+          } else {
+            // Standard navigation behavior
+            this._renderList(r.id);
+          }
         };
 
         this.listEl.appendChild(el);
@@ -3254,6 +3335,7 @@
     _import() {
       const input = document.createElement('input');
       input.type = 'file';
+      input.multiple = true;
 
       input.onchange = async () => {
         const files = assert(input.files);
@@ -3261,15 +3343,18 @@
         let id = null, ts = 0;
         for (const file of files) {
           const text = await file.text();
-          /** @type {ReplayEntry} */
+          /** @type {ReplayEntry | ReplayEntry[]} */
           const data = JSON.parse(text);
 
-          if (!('id' in data)) continue;
+          const dataArr = Array.isArray(data) ? data : [data];
+          for (const d of dataArr) {
+            if (!('id' in d)) continue;
 
-          await this._add(data);
-          if (data.ts > ts) {
-            ts = data.ts;
-            id = data.id;
+            await this._add(d);
+            if (d.ts > ts) {
+              ts = d.ts;
+              id = d.id;
+            }
           }
         }
         this.replays = await this._loadAll();
