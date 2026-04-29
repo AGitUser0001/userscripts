@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.8.58
+// @version     2026.04.28.9.04
 // @author      auser0001
 // ==/UserScript==
 
@@ -3792,6 +3792,28 @@
       this.contentEl = document.createElement('div');
       this.modal.appendChild(this.contentEl);
 
+      // Close on background click
+      this.root.addEventListener('pointerdown', e => {
+        if (e.target === this.root) {
+          this.close();
+        }
+      });
+
+      /** @param {KeyboardEvent} e */
+      this._onKey = (e) => {
+        if (e.key === 'Escape') this.close();
+
+        if (e.key === 'Enter') {
+          /** @type {HTMLElement | null} */
+          const primaryBtn = this.root.querySelector('.w-btn-primary');
+          if (primaryBtn) primaryBtn.click();
+        }
+      };
+    }
+
+    _initialized = false;
+    _lazy() {
+      if (this._initialized) return;
       this.opts.content(this.contentEl, this);
 
       // Actions
@@ -3828,24 +3850,7 @@
 
         this.modal.appendChild(actions);
       }
-
-      // Close on background click
-      this.root.addEventListener('pointerdown', e => {
-        if (e.target === this.root) {
-          this.close();
-        }
-      });
-
-      /** @param {KeyboardEvent} e */
-      this._onKey = (e) => {
-        if (e.key === 'Escape') this.close();
-
-        if (e.key === 'Enter') {
-          /** @type {HTMLElement | null} */
-          const primaryBtn = this.root.querySelector('.w-btn-primary');
-          if (primaryBtn) primaryBtn.click();
-        }
-      };
+      this._initialized = true;
     }
     /** @type {Map<string, (() => void)[]>} */
     _actions = new Map();
@@ -3859,6 +3864,7 @@
     };
 
     open() {
+      this._lazy();
       document.body.appendChild(this.root);
       window.addEventListener('keydown', this._onKey);
     }
