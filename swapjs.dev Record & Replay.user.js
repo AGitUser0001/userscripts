@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.30
+// @version     2026.04.28.9.33
 // @author      auser0001
 // ==/UserScript==
 
@@ -3049,6 +3049,8 @@
         }
       }
 
+      /** @type {HTMLElement | null} */
+      let selectedEl = null;
       for (const r of this.resultList) {
         const el = document.createElement('div');
         el.className = 'rc-item';
@@ -3058,15 +3060,7 @@
           if (r.isSolo) {
             this.vsControls.forEach(b => b.disabled = true);
           }
-          if (selectedChanged) {
-            setTimeout(() => {
-              if (!el.isConnected) return;
-              el.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest'
-              });
-            }, 60);
-          }
+          selectedEl = el;
         }
 
         const time = new Date(r.ts);
@@ -3109,6 +3103,13 @@
         };
 
         this.listEl.appendChild(el);
+      }
+
+      if (selectedChanged) {
+        selectedEl?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
       }
     }
 
