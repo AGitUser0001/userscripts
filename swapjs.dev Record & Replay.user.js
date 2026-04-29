@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.33
+// @version     2026.04.28.9.37
 // @author      auser0001
 // ==/UserScript==
 
@@ -4657,9 +4657,6 @@
         content: (root, widget) => {
           const list = document.createElement('div');
           list.className = 'rc-list';
-
-          // width constraint
-          list.style.width = 'min(80vw, 400px)';
 
           if (!entry.lineage.length) {
             const empty = document.createElement('div');
