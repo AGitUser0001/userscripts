@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.5.22
+// @version     2026.04.28.8.40
 // @author      auser0001
 // ==/UserScript==
 
@@ -3157,7 +3157,6 @@
 
       if (this.recordGhostReplays && mode !== 'replay') {
         const recorder = new SwapRecorder({
-          extraStartCond: () => true,
           extraStopCond: () => {
             if (replay._frozenPlayerMs != null) return 'player';
             if (replay._frozenOppMs != null) return 'opponent';
@@ -3165,9 +3164,9 @@
             return false;
           }
         });
-        recorder.start();
+        recorder.start().then(async () => {
+          await this._waitFor(() => !recorder.started);
 
-        this._waitFor(() => !recorder.started).then(async () => {
           /** @type {ReplayResult} */
           const result = recorder.exitMode === 'player' ?
             1 : recorder.exitMode === 'opponent' ? 2 : 0;
