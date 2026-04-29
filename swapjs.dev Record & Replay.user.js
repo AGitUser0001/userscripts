@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.04
+// @version     2026.04.28.9.13
 // @author      auser0001
 // ==/UserScript==
 
@@ -2336,12 +2336,16 @@
       font-weight: 600;
     }
 
-    /* Opponent name wraps cleanly */
-    .rc-opponent {
+    .rc-opponent, .rc-player {
       flex: 1;
       white-space: normal;
       word-break: break-word;
       line-height: 1.2;
+    }
+
+    .rc-right {
+      font-size: 11px;
+      flex-shrink: 0;
     }
 
     .rc-elo {
@@ -4682,28 +4686,59 @@
     _createItem(l, isCurrent, widget, onSelect) {
       const el = document.createElement('div');
       el.className = 'rc-item';
+
       if (isCurrent) el.classList.add('is-selected');
 
-      const resultClass = ['is-unknown', 'is-win', 'is-loss'][l.result] || '';
+      const time = new Date(l.ts);
+
+      const resultLabel = ['?', 'W', 'L'][l.result];
+      const resultClass = ['is-unknown', 'is-win', 'is-loss'][l.result];
+
+      const opponentClass = l.opponentNameClass || '';
+      const playerClass = l.playerNameClass || '';
+
+      const elo = l.opponentElo;
+
+      const eloHtml = elo != null
+        ? `<span class="rc-elo">${elo}</span>`
+        : '';
+      
+      const pelo = l.playerElo;
+
+      const peloHtml = pelo != null
+        ? `<span class="rc-elo">${pelo}</span>`
+        : '';
 
       el.innerHTML = `
-        <div class="rc-row">
-          <div class="rc-name ${l.playerNameClass || ''}">
+        <div class="rc-item-main">
+          <span class="rc-player ${playerClass} ${svClass}">
             ${l.playerName}
-          </div>
-          <div class="rc-vs">vs</div>
-          <div class="rc-name ${l.opponentNameClass || ''}">
+            ${peloHtml}
+          </span>
+          <span class="rc-right">
+            vs.
+          </span>
+        </div>
+        <div class="rc-item-main">
+          <span class="rc-opponent ${opponentClass} ${svClass}">
             ${l.opponentName}
-          </div>
+            ${eloHtml}
+          </span>
+          <span class="rc-result ${resultClass}">
+            ${resultLabel}
+          </span>
         </div>
-
-        <div class="rc-row rc-sub">
-          <span class="rc-result ${resultClass}"></span>
-          <span>${formatDuration(l.matchLength)}</span>
-          <span>${formatTime(new Date(l.ts))}</span>
+        <div class="rc-item-sub">
+          <span class="rc-time"
+                data-ts="${time.getTime()}"
+                title="${time.toLocaleString()}">
+            ${formatTime(time)}
+          </span>
+          <span class="rc-duration">
+            ${formatDuration(l.matchLength)}
+          </span>
         </div>
-
-        <div class="rc-row rc-item-sub">
+        <div class="rc-item-sub">
           <span class="rc-type">${l.type}</span>
           ${l.id && !isCurrent ? `<button class="rc-select-btn">select</button>` : ''}
         </div>
