@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.10.06
+// @version     2026.04.28.10.13
 // @author      auser0001
 // ==/UserScript==
 
@@ -2248,7 +2248,7 @@
       cursor: not-allowed;
     }
 
-    .rc-actions button.is-active {
+    .rc-actions .is-active {
       border-color: var(--accent);
     }
 
@@ -2283,6 +2283,7 @@
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--muted) transparent;
+      border-radius: 12px;
     }
 
     .rc-list::-webkit-scrollbar {
@@ -2516,15 +2517,14 @@
       display: flex;
     }
 
-    /* Tint the list background when in batch mode */
     .rc-list.is-batch-mode {
-      background: rgba(46, 139, 87, 0.05); /* Subtle blue/green tint */
+      background: var(--bg);
     }
 
-    /* Blue outline for selected items */
+    /* Outline for selected items */
     .rc-item.is-selected-batch {
-      outline: 2px solid var(--accent); /* Uses your existing accent color */
-      outline-offset: -2px;
+      outline: 1px solid var(--accent);
+      outline-offset: -1px;
     }
   `);
   document.adoptedStyleSheets.push(replaySS);
@@ -2994,7 +2994,10 @@
       }
 
       // Update UI State
-      if (btn) btn.textContent = this.isBatchMode ? 'export batch' : 'batch export';
+      if (btn) {
+        btn.textContent = this.isBatchMode ? 'export batch' : 'batch export';
+        btn.classList.toggle('is-active', this.isBatchMode);
+      }
       this.listEl.classList.toggle('is-batch-mode', this.isBatchMode);
       this._renderList(this.selectedId, false); // Refresh the list view
     }
@@ -3097,7 +3100,11 @@
         this._emptyList('No results');
         return;
       }
-      this.selectionControls.forEach(b => b.disabled = false);
+      if (this.isBatchMode) {
+        this.selectionControls.forEach(b => b.disabled = true);
+      } else {
+        this.selectionControls.forEach(b => b.disabled = false);
+      }
 
       if (selectId == null) {
         this.selectedId = this.resultList[0].id;
@@ -3162,8 +3169,7 @@
           </div>
         `;
 
-        // Apply the blue outline if selected
-        if (this.isBatchMode && this.batchSelection.has(r.id)) {
+        if (this.batchSelection.has(r.id)) {
           el.classList.add('is-selected-batch');
         }
 
@@ -3176,7 +3182,7 @@
               this.batchSelection.add(r.id);
             }
             // Re-render only the items (no search refresh)
-            this._renderList(r.id, false);
+            this._renderList(this.selectedId, false);
           } else {
             // Standard navigation behavior
             this._renderList(r.id);
