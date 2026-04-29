@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.8.40
+// @version     2026.04.28.8.58
 // @author      auser0001
 // ==/UserScript==
 
@@ -1445,6 +1445,19 @@
             throw new Error('Missing .bar-val in player bar');
           }
           return Number(valEl.textContent);
+        }
+      );
+
+      for (let i = 1; i < vals.length; i++) {
+        if (vals[i] < vals[i - 1]) return false;
+      }
+      return true;
+    }
+
+    _oppIsSorted() {
+      const vals = this.oppBars.map(
+        bar => {
+          return parseFloat(bar.style.height);
         }
       );
 
@@ -3159,7 +3172,7 @@
         const recorder = new SwapRecorder({
           extraStopCond: () => {
             if (replay._frozenPlayerMs != null) return 'player';
-            if (replay._frozenOppMs != null) return 'opponent';
+            if (replay._frozenOppMs != null && replay._oppIsSorted()) return 'opponent';
             if (replay._destroyed === true) return 'destroyed';
             return false;
           }
