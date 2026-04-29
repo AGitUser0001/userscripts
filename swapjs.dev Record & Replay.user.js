@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.9.17
+// @version     2026.04.28.9.22
 // @author      auser0001
 // ==/UserScript==
 
@@ -2500,7 +2500,7 @@
       display: none;
 
       gap: 4px;
-      padding-top: 4px;
+      padding-top: 5px;
       flex-direction: column;
       z-index: 10;
     }
