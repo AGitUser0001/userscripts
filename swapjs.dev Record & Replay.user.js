@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.10.13
+// @version     2026.04.28.10.15
 // @author      auser0001
 // ==/UserScript==
 
@@ -2318,7 +2318,7 @@
       transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s;
     }
 
-    .rc-item:hover {
+    .rc-item:hover:not(.is-selected, .is-selected-batch) {
       background: var(--empty);
     }
 
@@ -2525,6 +2525,7 @@
     .rc-item.is-selected-batch {
       outline: 1px solid var(--accent);
       outline-offset: -1px;
+      background: var(--empty);
     }
   `);
   document.adoptedStyleSheets.push(replaySS);
