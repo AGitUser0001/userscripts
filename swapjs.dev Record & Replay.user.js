@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.28.10.15
+// @version     2026.04.29.8.47
 // @author      auser0001
 // ==/UserScript==
 
@@ -1812,6 +1812,16 @@
           isPrimary: true,
           buttons: this.isDown ? 1 : 0,
           pressure: this.isDown ? 0.5 : 0,
+          coalescedEvents: [
+            new PointerEvent(type, {
+              ...common,
+              pointerType: "mouse",
+              isPrimary: true,
+              buttons: this.isDown ? 1 : 0,
+              pressure: this.isDown ? 0.5 : 0,
+              detail
+            })
+          ],
           detail
         }));
       } else {
@@ -1883,6 +1893,15 @@
       return { x: tx, y: ty };
     }
 
+    // Faster start, stronger stop than the previous version.
+    /**
+     * @param {number} t 
+     * @returns {number}
+     */
+    _easeOutHard(t) {
+      return 1 - Math.pow(1 - t, 4);
+    }
+
     /**
      * @param {{x: number, y: number}} position 
      */
@@ -1893,6 +1912,7 @@
       this.y = position.y;
       const el = this._elementAtPoint();
       this._handleMouseOver(el);
+
       this._dispatch("pointermove", el, { movementX, movementY });
       this._dispatch("mousemove", el, { movementX, movementY });
     }
@@ -1910,7 +1930,7 @@
     }
 
     pointerUp() {
-      const el = this._elementAtPoint();
+      const el = this._elementAtPoint() || document.documentElement; // Match browser behaviour
 
       this._dispatch("pointerup", el);
       this._dispatch("mouseup", el, { detail: 1 });
@@ -1932,12 +1952,6 @@
 
       this.isDown = false;
       this._downPath = [];
-    }
-
-    async click(duration = (Math.random() / 1.5 + 0.75) * 500) {
-      this.pointerDown();
-      await new Promise(r => setTimeout(r, duration));
-      this.pointerUp();
     }
 
     /**
