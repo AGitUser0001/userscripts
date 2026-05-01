@@ -3,7 +3,7 @@
 // @match       https://swapjs.dev/*
 // @grant       unsafeWindow
 // @inject-into page
-// @version     2026.04.29.8.47
+// @version     2026.04.30.9.45
 // @author      auser0001
 // ==/UserScript==
 
@@ -234,6 +234,9 @@
       /** @type {{ value: number, height: number }[]} */
       this._opponentHeightTable = [];
 
+      /** @type {number} */
+      this._targetIndex = -1;
+
       this._onMove = this._onMove.bind(this);
       this._onDown = this._onDown.bind(this);
       this._onUp = this._onUp.bind(this);
@@ -330,6 +333,9 @@
      * Compute the same style of slot index the game computes from pointer position.
      * Uses the real pointer grab offset captured on pointerdown.
      *
+     * This should be called during pointermove only. Pointerup should use the last
+     * hover index recorded from pointermove, not recompute from the pointerup event.
+     *
      * @param {PointerEvent} e
      * @returns {number}
      */
@@ -346,7 +352,32 @@
       const q = (dragLeft + barWidth / 2) / step - 0.5;
       const rounded = Math.round(q);
 
-      return Math.max(0, Math.min(count - 1, rounded));
+      let index = rounded;
+
+      // Match the game's small hysteresis (dead zone) around slot boundaries:
+      //
+      //   const N = .08;
+      //   if (We !== Ae) {
+      //     const L = Ae + (We > Ae ? .5 : -.5);
+      //     Math.abs(_e - L) < N && (E = Ae);
+      //   }
+      //
+      // Here:
+      //   q       = _e
+      //   rounded = We
+      //   previous = Ae
+      const previous = this._targetIndex;
+      const deadZone = 0.08;
+
+      if (previous !== -1 && rounded !== previous) {
+        const boundary = previous + (rounded > previous ? 0.5 : -0.5);
+
+        if (Math.abs(q - boundary) < deadZone) {
+          index = previous;
+        }
+      }
+
+      return Math.max(0, Math.min(count - 1, index));
     }
 
     /**
@@ -457,26 +488,13 @@
      * @param {PointerEvent} e
      * @returns {void}
      */
-    _onMove(e) {
-      if (!document.querySelector('.arena')) return;
-
-      this.data.events.push({
-        t: this._time(),
-        m: this._getPos(e),
-        c: e.pointerType === 'mouse' ? 1 : 0
-      });
-    }
-
-    /**
-     * @param {PointerEvent} e
-     * @returns {void}
-     */
     _onDown(e) {
       const bar = this._barFromTarget(e.target);
       if (!bar) return;
 
       this.activeBar = bar;
       this._dragStartIndex = this._barIndex(bar);
+      this._targetIndex = this._dragStartIndex;
 
       const barRect = bar.getBoundingClientRect();
       this._dragPointerOffsetX = e.clientX - barRect.left;
@@ -490,26 +508,44 @@
 
     /**
      * @param {PointerEvent} e
+     * @returns {void}
+     */
+    _onMove(e) {
+      if (!document.querySelector('.arena')) return;
+
+      if (this.activeBar) {
+        this._targetIndex = this._indexFromEvent(e);
+      }
+
+      this.data.events.push({
+        t: this._time(),
+        m: this._getPos(e),
+        c: e.pointerType === 'mouse' ? 1 : 0
+      });
+    }
+
+    /**
+     * @param {PointerEvent} e
      * @returns {Promise<void>}
      */
     async _onUp(e) {
       if (!this.activeBar) return;
 
       const t = this._time();
-
-      // Compute authoritative drop index immediately, before DOM teardown/reorder.
-      const u = this._indexFromEvent(e);
+      const u = this._targetIndex;
 
       await this._waitForDragEnd();
 
       this.data.events.push({
-        t, u,
+        t,
+        u,
         c: e.pointerType === 'mouse' ? 1 : 0
       });
 
       this.activeBar = null;
       this._dragStartIndex = -1;
       this._dragPointerOffsetX = 0;
+      this._targetIndex = -1;
     }
 
     /**
@@ -1325,9 +1361,23 @@
       );
 
       const q = (dragLeft + barWidth / 2) / step - 0.5;
-      return Math.max(0, Math.min(count - 1, Math.round(q)));
-    }
+      const rounded = Math.round(q);
 
+      let index = rounded;
+
+      const previous = this.targetIndex;
+      const deadZone = 0.08;
+
+      if (previous !== -1 && rounded !== previous) {
+        const boundary = previous + (rounded > previous ? 0.5 : -0.5);
+
+        if (Math.abs(q - boundary) < deadZone) {
+          index = previous;
+        }
+      }
+
+      return Math.max(0, Math.min(count - 1, index));
+    }
 
     /**
      * @param {PointerEvent} e
@@ -1377,7 +1427,6 @@
       this._layout();
     }
 
-
     /**
      * @param {PointerEvent} e
      */
@@ -1386,12 +1435,8 @@
       if (this.mode === 'replay' && e.isTrusted) return;
       if (!this.dragEl) return;
 
-      this.targetIndex = this._indexFromClientX(e.clientX);
-
       const from = this.bars.indexOf(this.dragEl);
       const to = this.targetIndex;
-
-      this._move(from, to);
 
       this.dragEl.classList.remove('dragging');
       this.dragEl = null;
@@ -1399,8 +1444,11 @@
       this.targetIndex = -1;
       this._dragOffsetX = 0;
 
-      this._lastPlayerMoveCount++;
-      this._renderMoveCounts();
+      if (from !== -1 && to !== -1 && from !== to) {
+        this._move(from, to);
+        this._lastPlayerMoveCount++;
+        this._renderMoveCounts();
+      }
       this._layout();
     }
 
